@@ -4,11 +4,54 @@ from __future__ import annotations
 
 try:
     import bpy
-    from bpy.types import Panel
+    from bpy.props import EnumProperty
+    from bpy.types import Panel, PropertyGroup
 except ImportError:
     # Allow importing without Blender
     bpy = None  # type: ignore
     Panel = object
+    PropertyGroup = object
+    EnumProperty = lambda **kwargs: None  # type: ignore  # noqa: E731
+
+
+def get_template_items(self, context):
+    """Get template items for enum property."""
+    try:
+        from linkforge.templates import library  # noqa: F401
+        from linkforge.templates.loader import get_all_templates
+
+        templates = get_all_templates()
+        items = []
+
+        for template in templates:
+            cat_name = (
+                template.category.value
+                if hasattr(template.category, "value")
+                else str(template.category)
+            )
+            items.append(
+                (
+                    template.id,
+                    f"{template.name} ({cat_name})",
+                    template.description,
+                )
+            )
+
+        return items if items else [("NONE", "No templates available", "")]
+
+    except Exception as e:
+        print(f"Error loading templates: {e}")
+        return [("ERROR", "Error loading templates", str(e))]
+
+
+class TemplateProperties(PropertyGroup):
+    """Properties for template selection."""
+
+    selected_template: EnumProperty(  # type: ignore
+        name="Template",
+        description="Select a robot template to create",
+        items=get_template_items,
+    )
 
 
 class LINKFORGE_PT_template_panel(Panel):
@@ -24,84 +67,54 @@ class LINKFORGE_PT_template_panel(Panel):
     def draw(self, context):
         """Draw the panel."""
         layout = self.layout
-
-        # Import templates
-        try:
-            from ...templates import library  # noqa: F401
-            from ...templates.loader import get_all_templates, get_template_categories
-        except ImportError:
-            layout.label(text="Template system not available", icon="ERROR")
-            return
-
-        # Get all templates organized by category
-        templates = get_all_templates()
-        categories = get_template_categories()
-
-        if not templates:
-            layout.label(text="No templates available", icon="INFO")
-            return
+        props = context.scene.linkforge_templates
 
         # Header
         box = layout.box()
         box.label(text="Create Robot from Template", icon="PRESET")
 
-        # Group templates by category
-        templates_by_category = {}
-        for template in templates:
-            cat = template.category
-            if cat not in templates_by_category:
-                templates_by_category[cat] = []
-            templates_by_category[cat].append(template)
+        # Template selector
+        box.prop(props, "selected_template", text="")
 
-        # Display templates by category
-        for category in sorted(categories):
-            if category not in templates_by_category:
-                continue
+        # Create button
+        row = box.row()
+        row.scale_y = 1.5
+        op = row.operator(
+            "linkforge.instantiate_template",
+            text="Create Robot",
+            icon="ADD",
+        )
+        op.template_id = props.selected_template
 
-            # Category header
-            box = layout.box()
-            cat_name = category.value if hasattr(category, "value") else str(category)
-            box.label(text=cat_name.title(), icon="OUTLINER_DATA_ARMATURE")
-
-            # Templates in this category
-            for template in templates_by_category[category]:
-                row = box.row(align=True)
-                row.scale_y = 1.2
-
-                # Template button
-                op = row.operator(
-                    "linkforge.instantiate_template",
-                    text=template.name,
-                    icon="ADD",
-                )
-                op.template_id = template.id
-
-                # Info icon (shows description on hover)
-                info_row = row.row(align=True)
-                info_row.enabled = False
-                info_row.label(text="", icon="INFO")
-
-                # Description as sublabel
-                desc_row = box.row()
-                desc_row.scale_y = 0.7
-                desc_row.label(text=template.description)
-                box.separator(factor=0.5)
+        # Info text
+        if props.selected_template and props.selected_template not in ("NONE", "ERROR"):
+            box.separator()
+            col = box.column(align=True)
+            col.scale_y = 0.8
+            col.label(text="Creates a ready-to-use robot", icon="INFO")
+            col.label(text="with all links and joints")
 
 
 classes = [
+    TemplateProperties,
     LINKFORGE_PT_template_panel,
 ]
 
 
 def register():
-    """Register panels."""
+    """Register panels and properties."""
     if bpy is not None:
         for cls in classes:
             bpy.utils.register_class(cls)
+        # Register template properties on scene
+        bpy.types.Scene.linkforge_templates = bpy.props.PointerProperty(type=TemplateProperties)
 
 
 def unregister():
-    """Unregister panels."""
+    """Unregister panels and properties."""
     if bpy is not None:
+        # Unregister scene property
+        del bpy.types.Scene.linkforge_templates
+        # Unregister classes
         for cls in reversed(classes):
             bpy.utils.unregister_class(cls)
