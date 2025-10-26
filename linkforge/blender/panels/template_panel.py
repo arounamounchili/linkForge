@@ -17,8 +17,9 @@ except ImportError:
 def get_template_items(self, context):
     """Get template items for enum property."""
     try:
-        from linkforge.templates import library  # noqa: F401
-        from linkforge.templates.loader import get_all_templates
+        # Use relative imports for Blender extension compatibility
+        from ...templates import library  # noqa: F401
+        from ...templates.loader import get_all_templates
 
         templates = get_all_templates()
         items = []
@@ -41,6 +42,8 @@ def get_template_items(self, context):
 
     except Exception as e:
         print(f"Error loading templates: {e}")
+        import traceback
+        traceback.print_exc()
         return [("ERROR", "Error loading templates", str(e))]
 
 

@@ -34,11 +34,11 @@ class LINKFORGE_OT_instantiate_template(Operator):
             return {"CANCELLED"}
 
         try:
-            # Import with absolute imports for Blender extension compatibility
+            # Use relative imports for Blender extension compatibility
             from pathlib import Path
 
-            from linkforge.templates.loader import get_template
-            from linkforge.blender.utils.urdf_importer import import_robot_to_scene
+            from ...templates.loader import get_template
+            from ..utils.urdf_importer import import_robot_to_scene
 
             # Get the template
             template = get_template(self.template_id)
