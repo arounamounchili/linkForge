@@ -379,11 +379,15 @@ def blender_joint_to_core(obj) -> Joint | None:
             offset=props.mimic_offset,
         )
 
+    # Handle "NONE" value for parent/child links (when no link is selected)
+    parent = props.parent_link if props.parent_link != "NONE" else ""
+    child = props.child_link if props.child_link != "NONE" else ""
+
     return Joint(
         name=joint_name,
         type=joint_type,
-        parent=props.parent_link,
-        child=props.child_link,
+        parent=parent,
+        child=child,
         origin=origin,
         axis=axis,
         limits=limits,

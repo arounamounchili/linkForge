@@ -19,7 +19,7 @@ def get_available_links(self, context):
     """Get list of available links in the scene for dropdown."""
     import bpy
 
-    items = [("", "None", "No link selected")]
+    items = [("NONE", "None", "No link selected")]
 
     # Use bpy.context.scene to ensure we get the current scene
     try:
