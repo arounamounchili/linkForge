@@ -71,3 +71,6 @@ docs/_templates/
 # Temporary files
 tmp/
 temp/
+
+# Planning documents (for reference only, not versioned)
+.planning/
