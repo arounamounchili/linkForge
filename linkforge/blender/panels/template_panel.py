@@ -54,13 +54,14 @@ class LINKFORGE_PT_template_panel(Panel):
             templates_by_category[cat].append(template)
 
         # Display templates by category
-        for category in sorted(categories, key=lambda c: c.value):
+        for category in sorted(categories):
             if category not in templates_by_category:
                 continue
 
             # Category header
             box = layout.box()
-            box.label(text=category.value.title(), icon="OUTLINER_DATA_ARMATURE")
+            cat_name = category.value if hasattr(category, "value") else str(category)
+            box.label(text=cat_name.title(), icon="OUTLINER_DATA_ARMATURE")
 
             # Templates in this category
             for template in templates_by_category[category]:
