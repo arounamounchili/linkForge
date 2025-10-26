@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import math
-
 import pytest
 
 from linkforge.core.models import Box, Capsule, Cylinder, InertiaTensor, Sphere, Vector3

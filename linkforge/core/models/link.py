@@ -116,6 +116,4 @@ class Link:
 
     def with_inertial(self, inertial: Inertial) -> Link:
         """Create a new link with updated inertial properties."""
-        return Link(
-            name=self.name, visual=self.visual, collision=self.collision, inertial=inertial
-        )
+        return Link(name=self.name, visual=self.visual, collision=self.collision, inertial=inertial)

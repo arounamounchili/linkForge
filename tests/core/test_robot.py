@@ -7,8 +7,6 @@ import math
 import pytest
 
 from linkforge.core.models import (
-    Box,
-    Collision,
     Inertial,
     InertiaTensor,
     Joint,
@@ -16,8 +14,6 @@ from linkforge.core.models import (
     JointType,
     Link,
     Robot,
-    Vector3,
-    Visual,
 )
 
 
@@ -246,9 +242,7 @@ class TestRobotValidation:
         robot.add_link(Link(name="link3"))
 
         # Only connect link2 and link3, leaving link1 as orphan root
-        robot.add_joint(
-            Joint(name="joint1", type=JointType.FIXED, parent="link2", child="link3")
-        )
+        robot.add_joint(Joint(name="joint1", type=JointType.FIXED, parent="link2", child="link3"))
 
         errors = robot.validate_tree_structure()
         assert any("Multiple root links" in err for err in errors)
@@ -261,9 +255,7 @@ class TestRobotValidation:
         robot.add_link(Link(name="link3"))
 
         # Connect link1 and link2, leaving link3 disconnected
-        robot.add_joint(
-            Joint(name="joint1", type=JointType.FIXED, parent="link1", child="link2")
-        )
+        robot.add_joint(Joint(name="joint1", type=JointType.FIXED, parent="link1", child="link2"))
 
         errors = robot.validate_tree_structure()
         # link3 is disconnected and will be detected as a multiple root issue

@@ -36,8 +36,11 @@ class LINKFORGE_OT_create_joint(Operator):
         joint_empty.linkforge_joint.joint_type = "REVOLUTE"
 
         # Try to auto-detect parent/child from selection
-        selected_links = [obj for obj in context.selected_objects
-                         if obj != joint_empty and obj.linkforge.is_robot_link]
+        selected_links = [
+            obj
+            for obj in context.selected_objects
+            if obj != joint_empty and obj.linkforge.is_robot_link
+        ]
 
         if len(selected_links) >= 1:
             joint_empty.linkforge_joint.parent_link = selected_links[0].linkforge.link_name
@@ -94,9 +97,11 @@ class LINKFORGE_OT_auto_detect_parent_child(Operator):
 
         # Find nearest links based on distance
         joint_loc = joint_empty.location
-        links = [(obj, (obj.location - joint_loc).length)
-                for obj in context.scene.objects
-                if obj.linkforge.is_robot_link]
+        links = [
+            (obj, (obj.location - joint_loc).length)
+            for obj in context.scene.objects
+            if obj.linkforge.is_robot_link
+        ]
 
         if not links:
             self.report({"WARNING"}, "No robot links found in scene")
@@ -114,18 +119,18 @@ class LINKFORGE_OT_auto_detect_parent_child(Operator):
                 parent_name = links[0][0].linkforge.link_name
                 props.parent_link = parent_name
                 self.report({"INFO"}, f"Set parent: {parent_name}")
-        except TypeError as e:
+        except TypeError:
             # Fallback: enum validation failed, but continue
-            self.report({"WARNING"}, f"Could not set parent link in dropdown")
+            self.report({"WARNING"}, "Could not set parent link in dropdown")
 
         try:
             if len(links) >= 2:
                 child_name = links[1][0].linkforge.link_name
                 props.child_link = child_name
                 self.report({"INFO"}, f"Set child: {child_name}")
-        except TypeError as e:
+        except TypeError:
             # Fallback: enum validation failed, but continue
-            self.report({"WARNING"}, f"Could not set child link in dropdown")
+            self.report({"WARNING"}, "Could not set child link in dropdown")
 
         return {"FINISHED"}
 

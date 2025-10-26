@@ -84,8 +84,8 @@ class LINKFORGE_OT_calculate_inertia(Operator):
         props = obj.linkforge
 
         # Import here to avoid circular dependency
-        from ..utils.converters import get_object_geometry
         from ...core.physics import calculate_inertia
+        from ..utils.converters import get_object_geometry
 
         # Get geometry
         geometry = get_object_geometry(obj, props.collision_geometry_type)

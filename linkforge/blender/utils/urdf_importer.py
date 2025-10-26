@@ -49,12 +49,12 @@ def create_material_from_color(color: Color, name: str):
     nodes = mat.node_tree.nodes
     bsdf = None
     for node in nodes:
-        if node.type == 'BSDF_PRINCIPLED':
+        if node.type == "BSDF_PRINCIPLED":
             bsdf = node
             break
 
     if bsdf:
-        bsdf.inputs['Base Color'].default_value = (color.r, color.g, color.b, color.a)
+        bsdf.inputs["Base Color"].default_value = (color.r, color.g, color.b, color.a)
 
     return mat
 
@@ -73,7 +73,7 @@ def create_primitive_mesh(geometry, name: str):
         return None
 
     # Deselect all first
-    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_all(action="DESELECT")
 
     obj = None
 
@@ -107,7 +107,11 @@ def create_primitive_mesh(geometry, name: str):
             if obj:
                 obj.name = name
                 # Scale to approximate capsule
-                obj.dimensions = (geometry.radius * 2, geometry.radius * 2, geometry.length + geometry.radius * 2)
+                obj.dimensions = (
+                    geometry.radius * 2,
+                    geometry.radius * 2,
+                    geometry.length + geometry.radius * 2,
+                )
 
         else:
             return None
@@ -133,17 +137,17 @@ def import_mesh_file(mesh_path: Path, name: str):
         return None
 
     # Deselect all
-    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_all(action="DESELECT")
 
     # Import based on file extension
     ext = mesh_path.suffix.lower()
 
     try:
-        if ext == '.obj':
+        if ext == ".obj":
             bpy.ops.wm.obj_import(filepath=str(mesh_path))
-        elif ext == '.stl':
+        elif ext == ".stl":
             bpy.ops.wm.stl_import(filepath=str(mesh_path))
-        elif ext == '.dae':
+        elif ext == ".dae":
             # DAE might not be available in all Blender versions
             bpy.ops.wm.collada_import(filepath=str(mesh_path))
         else:
@@ -178,13 +182,13 @@ def create_link_object(link: Link, urdf_dir: Path, collection=None) -> object | 
         return None
 
     # Create an Empty to represent the link frame (at link origin)
-    bpy.ops.object.empty_add(type='SPHERE', location=(0, 0, 0))
+    bpy.ops.object.empty_add(type="SPHERE", location=(0, 0, 0))
     link_empty = bpy.context.active_object
     link_empty.name = link.name
     link_empty.empty_display_size = 0.02  # Small, subtle marker
 
     # Set link properties on the Empty
-    if hasattr(link_empty, 'linkforge'):
+    if hasattr(link_empty, "linkforge"):
         props = link_empty.linkforge
         props.is_robot_link = True
         props.link_name = link.name
@@ -238,13 +242,15 @@ def create_link_object(link: Link, urdf_dir: Path, collection=None) -> object | 
 
             # Apply material to visual mesh
             if link.visual and link.visual.material and link.visual.material.color:
-                mat = create_material_from_color(link.visual.material.color, link.visual.material.name)
+                mat = create_material_from_color(
+                    link.visual.material.color, link.visual.material.name
+                )
                 if mat and visual_obj.data:
                     visual_obj.data.materials.clear()
                     visual_obj.data.materials.append(mat)
 
     # Set additional link properties on the Empty
-    if hasattr(link_empty, 'linkforge'):
+    if hasattr(link_empty, "linkforge"):
         props = link_empty.linkforge
 
         # Set mass and inertia
@@ -324,13 +330,13 @@ def create_joint_object(joint: Joint, link_objects: dict, collection=None) -> ob
         return None
 
     # Create Empty object with RViz-style 3-axis visualization
-    bpy.ops.object.empty_add(type='ARROWS', location=(0, 0, 0))
+    bpy.ops.object.empty_add(type="ARROWS", location=(0, 0, 0))
     empty = bpy.context.active_object
     empty.name = joint.name  # Clean name without "joint_" prefix
     empty.empty_display_size = 0.15  # Larger and more visible
 
     # Set joint properties
-    if hasattr(empty, 'linkforge_joint'):
+    if hasattr(empty, "linkforge_joint"):
         props = empty.linkforge_joint
         props.is_robot_joint = True
         props.joint_name = joint.name
@@ -409,7 +415,7 @@ def create_joint_object(joint: Joint, link_objects: dict, collection=None) -> ob
                 coll.objects.unlink(empty)
 
     # Set visibility based on "Show Joint Axes" property
-    if bpy and hasattr(bpy.context.scene, 'linkforge'):
+    if bpy and hasattr(bpy.context.scene, "linkforge"):
         show_joint_axes = bpy.context.scene.linkforge.show_joint_axes
         empty.hide_viewport = not show_joint_axes
         empty.hide_render = True  # Always hide from render
@@ -433,7 +439,7 @@ def import_robot_to_scene(robot: Robot, urdf_path: Path, context) -> bool:
 
     # Set robot name in scene properties
     scene = context.scene
-    if hasattr(scene, 'linkforge'):
+    if hasattr(scene, "linkforge"):
         scene.linkforge.robot_name = robot.name
 
     # Create collection for this robot

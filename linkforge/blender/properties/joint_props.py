@@ -26,7 +26,7 @@ def get_available_links(self, context):
         scene = bpy.context.scene
     except AttributeError:
         # Fallback to passed context
-        if context and hasattr(context, 'scene'):
+        if context and hasattr(context, "scene"):
             scene = context.scene
         else:
             return items

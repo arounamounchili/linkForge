@@ -30,7 +30,7 @@ def export_mesh_stl(obj, filepath: Path) -> bool:
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
     # Deselect all and select only target object
-    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
 
@@ -40,8 +40,8 @@ def export_mesh_stl(obj, filepath: Path) -> bool:
             filepath=str(filepath),
             export_selected_objects=True,
             apply_modifiers=True,
-            forward_axis='Y',
-            up_axis='Z',
+            forward_axis="Y",
+            up_axis="Z",
         )
         return True
     except Exception as e:
@@ -66,7 +66,7 @@ def export_mesh_obj(obj, filepath: Path) -> bool:
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
     # Deselect all and select only target object
-    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
 
@@ -77,8 +77,8 @@ def export_mesh_obj(obj, filepath: Path) -> bool:
             export_selected_objects=True,
             apply_modifiers=True,
             export_materials=True,
-            forward_axis='Y',
-            up_axis='Z',
+            forward_axis="Y",
+            up_axis="Z",
         )
         return True
     except Exception as e:
@@ -96,11 +96,11 @@ def create_simplified_mesh(obj, decimation_ratio: float):
     Returns:
         Simplified Blender Object or None
     """
-    if bpy is None or obj is None or obj.type != 'MESH':
+    if bpy is None or obj is None or obj.type != "MESH":
         return None
 
     # Duplicate the object
-    bpy.ops.object.select_all(action='DESELECT')
+    bpy.ops.object.select_all(action="DESELECT")
     obj.select_set(True)
     bpy.context.view_layer.objects.active = obj
     bpy.ops.object.duplicate()
@@ -109,9 +109,9 @@ def create_simplified_mesh(obj, decimation_ratio: float):
     simplified_obj = bpy.context.active_object
 
     # Add Decimate modifier
-    decimate_mod = simplified_obj.modifiers.new(name="Decimate", type='DECIMATE')
+    decimate_mod = simplified_obj.modifiers.new(name="Decimate", type="DECIMATE")
     decimate_mod.ratio = decimation_ratio
-    decimate_mod.decimate_type = 'COLLAPSE'
+    decimate_mod.decimate_type = "COLLAPSE"
 
     # Apply the modifier
     bpy.context.view_layer.objects.active = simplified_obj
@@ -158,7 +158,7 @@ def export_link_mesh(
     Returns:
         Path to exported mesh file, or None if export failed
     """
-    if bpy is None or obj is None or obj.type != 'MESH':
+    if bpy is None or obj is None or obj.type != "MESH":
         return None
 
     # Generate filename
@@ -184,7 +184,7 @@ def export_link_mesh(
     else:
         # Unknown format, default to OBJ
         print(f"Warning: Unknown mesh format '{mesh_format}', using OBJ")
-        filepath = filepath.with_suffix('.obj')
+        filepath = filepath.with_suffix(".obj")
         success = export_mesh_obj(export_obj, filepath)
 
     # Clean up temporary simplified object

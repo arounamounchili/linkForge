@@ -34,8 +34,9 @@ class LINKFORGE_OT_export_urdf(Operator, ExportHelper):
         """Execute the export."""
         # Import here to avoid circular dependencies
         from pathlib import Path
-        from ..utils.converters import scene_to_robot
+
         from ...core.generators import URDFGenerator, XACROGenerator
+        from ..utils.converters import scene_to_robot
 
         scene = context.scene
         robot_props = scene.linkforge
@@ -101,8 +102,9 @@ class LINKFORGE_OT_import_urdf(Operator, ImportHelper):
     def execute(self, context):
         """Execute the import."""
         from pathlib import Path
-        from ..utils.urdf_importer import import_robot_to_scene
+
         from ...core.parsers.urdf_parser import parse_urdf
+        from ..utils.urdf_importer import import_robot_to_scene
 
         # Parse URDF file
         urdf_path = Path(self.filepath)
@@ -123,7 +125,7 @@ class LINKFORGE_OT_import_urdf(Operator, ImportHelper):
                 self.report(
                     {"INFO"},
                     f"Imported robot '{robot.name}' "
-                    f"({len(robot.links)} links, {len(robot.joints)} joints)"
+                    f"({len(robot.links)} links, {len(robot.joints)} joints)",
                 )
                 return {"FINISHED"}
             else:
@@ -161,7 +163,7 @@ class LINKFORGE_OT_validate_robot(Operator):
                 {"INFO"},
                 f"✓ Robot '{robot.name}' is valid! "
                 f"({len(robot.links)} links, {len(robot.joints)} joints, "
-                f"{robot.degrees_of_freedom} DOF)"
+                f"{robot.degrees_of_freedom} DOF)",
             )
             return {"FINISHED"}
         else:

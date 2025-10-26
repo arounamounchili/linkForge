@@ -22,6 +22,7 @@ __all__ = ["register", "unregister"]
 # This prevents namespace package issues
 try:
     import bpy
+
     from . import blender
 except ImportError:
     # Allow import for testing without Blender

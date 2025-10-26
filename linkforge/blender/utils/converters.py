@@ -106,7 +106,7 @@ def get_object_geometry(
 
     if geometry_type == "MESH":
         # Export actual mesh file if meshes_dir is provided
-        if meshes_dir and link_name and obj.type == 'MESH':
+        if meshes_dir and link_name and obj.type == "MESH":
             from .mesh_export import export_link_mesh
 
             mesh_path = export_link_mesh(
@@ -127,8 +127,7 @@ def get_object_geometry(
         geometry_type = "BOX"
 
     if geometry_type == "BOX":
-        # Use bounding box
-        bbox = [Vector(corner) for corner in obj.bound_box]
+        # Use bounding box dimensions
         dimensions = obj.dimensions
         return Box(size=Vector3(dimensions.x, dimensions.y, dimensions.z))
 
@@ -189,15 +188,15 @@ def get_object_material(obj, props) -> Material | None:
             if blender_mat.use_nodes and blender_mat.node_tree:
                 # Find Principled BSDF node
                 for node in blender_mat.node_tree.nodes:
-                    if node.type == 'BSDF_PRINCIPLED':
+                    if node.type == "BSDF_PRINCIPLED":
                         # Get Base Color input (index 0)
-                        base_color_input = node.inputs['Base Color']
+                        base_color_input = node.inputs["Base Color"]
                         base_color = base_color_input.default_value
                         color = Color(
                             r=base_color[0],
                             g=base_color[1],
                             b=base_color[2],
-                            a=base_color[3] if len(base_color) > 3 else 1.0
+                            a=base_color[3] if len(base_color) > 3 else 1.0,
                         )
                         break
 
@@ -241,7 +240,7 @@ def blender_link_to_core(
 
     # Get mesh format from robot props
     mesh_format = "STL"
-    if robot_props and hasattr(robot_props, 'mesh_format'):
+    if robot_props and hasattr(robot_props, "mesh_format"):
         mesh_format = robot_props.mesh_format
 
     # Visual geometry

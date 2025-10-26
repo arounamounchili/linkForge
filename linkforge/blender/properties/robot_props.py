@@ -24,7 +24,7 @@ def update_joint_axes_visibility(self, context):
 
     # Find all joint empties and update their visibility
     for obj in context.scene.objects:
-        if obj.type == 'EMPTY' and hasattr(obj, 'linkforge_joint'):
+        if obj.type == "EMPTY" and hasattr(obj, "linkforge_joint"):
             if obj.linkforge_joint.is_robot_joint:
                 obj.hide_viewport = not show
 

@@ -18,9 +18,7 @@ def build_tree_structure(scene):
         dict: Tree structure mapping parent links to children
     """
     # Collect all links
-    links = {obj.linkforge.link_name: obj
-             for obj in scene.objects
-             if obj.linkforge.is_robot_link}
+    links = {obj.linkforge.link_name: obj for obj in scene.objects if obj.linkforge.is_robot_link}
 
     # Build parent->children mapping from joints
     tree = {link_name: [] for link_name in links}
@@ -137,8 +135,7 @@ class LINKFORGE_PT_robot_panel(Panel):
         # Count links and joints
         num_links = sum(1 for obj in scene.objects if obj.linkforge.is_robot_link)
         num_joints = sum(
-            1 for obj in scene.objects
-            if obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint
+            1 for obj in scene.objects if obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint
         )
 
         # Build tree structure to find root

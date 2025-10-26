@@ -8,8 +8,8 @@ from pathlib import Path
 from ..models import (
     Box,
     Capsule,
-    Color,
     Collision,
+    Color,
     Cylinder,
     Inertial,
     InertiaTensor,
@@ -192,7 +192,9 @@ def parse_joint(joint_elem: ET.Element) -> Joint:
 
     # Parse axis
     axis_elem = joint_elem.find("axis")
-    axis = parse_vector3(axis_elem.get("xyz", "0 0 1")) if axis_elem is not None else Vector3(0, 0, 1)
+    axis = (
+        parse_vector3(axis_elem.get("xyz", "0 0 1")) if axis_elem is not None else Vector3(0, 0, 1)
+    )
 
     # Parse limits
     limits = None
