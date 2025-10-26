@@ -9,13 +9,14 @@ This module contains all Blender-specific code:
 
 from __future__ import annotations
 
-from . import operators, panels, properties
+from . import handlers, operators, panels, properties
 
-# Registration order matters: properties first, then operators, then panels
+# Registration order matters: properties first, then operators, then panels, then handlers
 modules = [
     properties,
     operators,
     panels,
+    handlers,
 ]
 
 
@@ -35,6 +36,7 @@ __all__ = [
     "properties",
     "operators",
     "panels",
+    "handlers",
     "register",
     "unregister",
 ]

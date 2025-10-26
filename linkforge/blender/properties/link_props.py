@@ -21,6 +21,54 @@ except ImportError:
     BoolProperty = EnumProperty = FloatProperty = FloatVectorProperty = StringProperty = None
 
 
+def update_link_name(self, context):
+    """Update callback when link_name changes - sync to object name."""
+    if not bpy:
+        return
+
+    # Find the object that owns this property
+    obj = None
+    for o in context.scene.objects:
+        if hasattr(o, "linkforge") and o.linkforge == self:
+            obj = o
+            break
+
+    if obj is None:
+        return
+
+    # Only sync if this is marked as a robot link and has a name
+    if not self.is_robot_link or not self.link_name:
+        return
+
+    # Sanitize link name for URDF (remove invalid characters)
+    sanitized_name = sanitize_urdf_name(self.link_name)
+
+    # Update object name to match link name
+    # Note: Blender may append .001, .002 etc if name conflicts exist
+    if obj.name != sanitized_name:
+        obj.name = sanitized_name
+
+
+def sanitize_urdf_name(name: str) -> str:
+    """Sanitize name for URDF compatibility.
+
+    URDF names should only contain alphanumeric, underscore, and hyphen.
+    """
+    if not name:
+        return name
+
+    # Replace spaces with underscores
+    name = name.replace(" ", "_")
+
+    # Remove invalid characters (keep alphanumeric, underscore, hyphen)
+    valid_chars = []
+    for char in name:
+        if char.isalnum() or char in ("_", "-"):
+            valid_chars.append(char)
+
+    return "".join(valid_chars)
+
+
 class LinkPropertyGroup(PropertyGroup):
     """Properties for a robot link stored on a Blender object."""
 
@@ -36,6 +84,7 @@ class LinkPropertyGroup(PropertyGroup):
         description="Name of the link in URDF (must be unique)",
         default="",
         maxlen=64,
+        update=update_link_name,
     )
 
     # Inertial properties
