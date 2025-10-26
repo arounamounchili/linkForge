@@ -147,7 +147,7 @@ def create_4wheel_mobile_base() -> Robot:
         type=JointType.CONTINUOUS,
         parent="base_link",
         child="left_wheel",
-        origin=Transform(xyz=Vector3(0.0, 0.225, 0.0)),  # Left side
+        origin=Transform(xyz=Vector3(0.0, 0.225, -0.1)),  # Left side, at chassis bottom
         axis=Vector3(0.0, 1.0, 0.0),  # Rotate around Y axis
     )
 
@@ -157,7 +157,7 @@ def create_4wheel_mobile_base() -> Robot:
         type=JointType.CONTINUOUS,
         parent="base_link",
         child="right_wheel",
-        origin=Transform(xyz=Vector3(0.0, -0.225, 0.0)),  # Right side
+        origin=Transform(xyz=Vector3(0.0, -0.225, -0.1)),  # Right side, at chassis bottom
         axis=Vector3(0.0, 1.0, 0.0),  # Rotate around Y axis
     )
 

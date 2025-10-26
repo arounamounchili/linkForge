@@ -35,14 +35,17 @@ def create_2dof_arm() -> Robot:
     base_visual = Visual(
         name="base_visual",
         geometry=Box(size=Vector3(0.2, 0.2, 0.1)),
+        origin=Transform(xyz=Vector3(0.0, 0.0, 0.05)),  # Center box so top is at 0.1
         material=Material(name="gray", color=Colors.GRAY),
     )
     base_collision = Collision(
         name="base_collision",
         geometry=Box(size=Vector3(0.2, 0.2, 0.1)),
+        origin=Transform(xyz=Vector3(0.0, 0.0, 0.05)),
     )
     base_inertial = Inertial(
         mass=2.0,
+        origin=Transform(xyz=Vector3(0.0, 0.0, 0.05)),
         inertia=InertiaTensor(ixx=0.0067, ixy=0.0, ixz=0.0, iyy=0.0067, iyz=0.0, izz=0.0117),
     )
     base_link = Link(
