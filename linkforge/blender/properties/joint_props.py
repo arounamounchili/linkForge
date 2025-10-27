@@ -242,19 +242,6 @@ class JointPropertyGroup(PropertyGroup):
         default=0.0,
     )
 
-    # Visual helpers
-    show_axis: BoolProperty(  # type: ignore
-        name="Show Axis",
-        description="Display joint axis in viewport",
-        default=True,
-    )
-
-    show_limits: BoolProperty(  # type: ignore
-        name="Show Limits",
-        description="Display joint limits in viewport",
-        default=True,
-    )
-
 
 # Registration
 def register():
