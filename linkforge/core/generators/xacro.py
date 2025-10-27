@@ -21,6 +21,8 @@ from xml.dom import minidom
 
 from ..models.robot import Robot
 from ..models.material import Material
+from ..models.link import Link
+from ..models.joint import Joint
 from ..models.geometry import Box, Cylinder, Sphere, GeometryType
 from .urdf import URDFGenerator
 
@@ -68,6 +70,7 @@ class XACROGenerator:
         # Track extracted properties
         self.material_properties: dict[str, str] = {}
         self.dimension_properties: dict[str, float] = {}
+        self.generated_macros: list[dict[str, Any]] = []
 
     def generate(self, robot: Robot) -> str:
         """Generate XACRO XML string from robot.
@@ -99,6 +102,7 @@ class XACROGenerator:
         # Reset property tracking
         self.material_properties = {}
         self.dimension_properties = {}
+        self.generated_macros = []
 
         # Build properties list
         properties: list[tuple[str, str]] = []
@@ -116,10 +120,21 @@ class XACROGenerator:
             if self.extract_dimensions:
                 self._extract_dimension_properties(robot, root, properties)
 
+            # Generate macros for repeated patterns
+            if self.generate_macros:
+                self._generate_macros(robot, root)
+
         # Insert all properties at the beginning
-        for i, (prop_name, prop_value) in enumerate(properties):
+        insert_index = 0
+        for prop_name, prop_value in properties:
             prop_elem = ET.Element("xacro:property", name=prop_name, value=str(prop_value))
-            root.insert(i, prop_elem)
+            root.insert(insert_index, prop_elem)
+            insert_index += 1
+
+        # Insert generated macros after properties
+        for macro_info in self.generated_macros:
+            root.insert(insert_index, macro_info["element"])
+            insert_index += 1
 
         # Convert to string
         return self._element_to_string(root)
@@ -127,12 +142,80 @@ class XACROGenerator:
     def write(self, robot: Robot, filepath: Path) -> None:
         """Write XACRO to file.
 
+        If split_files is enabled, creates multiple files:
+        - robot.xacro (main file with includes)
+        - materials.xacro (material definitions)
+        - macros.xacro (macro definitions)
+
         Args:
             robot: Robot model
-            filepath: Output file path
+            filepath: Output file path (for main robot.xacro)
         """
-        xacro_string = self.generate(robot)
-        filepath.write_text(xacro_string, encoding="utf-8")
+        if self.split_files:
+            self._write_split_files(robot, filepath)
+        else:
+            xacro_string = self.generate(robot)
+            filepath.write_text(xacro_string, encoding="utf-8")
+
+    def _write_split_files(self, robot: Robot, main_filepath: Path) -> None:
+        """Write robot to multiple XACRO files.
+
+        Args:
+            robot: Robot model
+            main_filepath: Path for main robot.xacro file
+        """
+        # Generate full XACRO first
+        full_xacro = self.generate(robot)
+        root = ET.fromstring(full_xacro)
+
+        # Create separate files
+        base_dir = main_filepath.parent
+        robot_name = main_filepath.stem
+
+        # Extract top-level materials (not nested in links)
+        materials_root = ET.Element("robot")
+        materials_root.set("xmlns:xacro", "http://www.ros.org/wiki/xacro")
+        for mat_elem in list(root.findall("material")):
+            materials_root.append(mat_elem)
+            root.remove(mat_elem)
+
+        # Extract macros (top-level)
+        macros_root = ET.Element("robot")
+        macros_root.set("xmlns:xacro", "http://www.ros.org/wiki/xacro")
+        for macro_elem in list(root.findall("xacro:macro", {"xacro": "http://www.ros.org/wiki/xacro"})):
+            macros_root.append(macro_elem)
+            root.remove(macro_elem)
+
+        # Create main file with includes
+        main_root = ET.Element("robot")
+        main_root.set("xmlns:xacro", "http://www.ros.org/wiki/xacro")
+        main_root.set("name", root.get("name", robot.name))
+
+        # Add includes at the top
+        if len(materials_root) > 0:
+            include_mat = ET.Element("xacro:include")
+            include_mat.set("filename", f"{robot_name}_materials.xacro")
+            main_root.insert(0, include_mat)
+
+        if len(macros_root) > 0:
+            include_mac = ET.Element("xacro:include")
+            include_mac.set("filename", f"{robot_name}_macros.xacro")
+            main_root.insert(1 if len(materials_root) > 0 else 0, include_mac)
+
+        # Copy properties and remaining content
+        for child in root:
+            main_root.append(child)
+
+        # Write files
+        if len(materials_root) > 0:
+            mat_path = base_dir / f"{robot_name}_materials.xacro"
+            mat_path.write_text(self._element_to_string(materials_root), encoding="utf-8")
+
+        if len(macros_root) > 0:
+            mac_path = base_dir / f"{robot_name}_macros.xacro"
+            mac_path.write_text(self._element_to_string(macros_root), encoding="utf-8")
+
+        main_filepath.write_text(self._element_to_string(main_root), encoding="utf-8")
 
     def _extract_material_properties(
         self, robot: Robot, root: ET.Element, properties: list[tuple[str, str]]
@@ -220,6 +303,98 @@ class XACROGenerator:
         # Note: Replacing dimension values in XML is complex
         # For now, we just create the properties
         # Full replacement would require tracking geometry elements
+
+    def _generate_macros(self, robot: Robot, root: ET.Element) -> None:
+        """Generate macros for repeated link patterns.
+
+        Args:
+            robot: Robot model
+            root: XML root element
+        """
+        # Group links by geometry signature
+        link_groups: dict[str, list[tuple[Link, Joint | None]]] = defaultdict(list)
+
+        for link in robot.links:
+            # Create signature based on geometry
+            signature = self._get_link_signature(link)
+            if signature:
+                # Find associated joint
+                joint = None
+                for j in robot.joints:
+                    if j.child == link.name:
+                        joint = j
+                        break
+                link_groups[signature].append((link, joint))
+
+        # Generate macros for groups with 2+ members
+        for signature, group in link_groups.items():
+            if len(group) >= 2:
+                self._create_macro_for_group(signature, group, root)
+
+    def _get_link_signature(self, link: Link) -> str | None:
+        """Create a signature string for a link based on its geometry.
+
+        Args:
+            link: Link to analyze
+
+        Returns:
+            Signature string or None if link has no visual geometry
+        """
+        if not link.visual or not link.visual.geometry:
+            return None
+
+        geom = link.visual.geometry
+        parts = [geom.type.value]
+
+        # Add geometry dimensions to signature
+        if geom.type == GeometryType.BOX:
+            parts.extend([f"box", f"{geom.size.x:.3f}", f"{geom.size.y:.3f}", f"{geom.size.z:.3f}"])  # type: ignore
+        elif geom.type == GeometryType.CYLINDER:
+            parts.extend([f"cyl", f"{geom.radius:.3f}", f"{geom.length:.3f}"])  # type: ignore
+        elif geom.type == GeometryType.SPHERE:
+            parts.extend([f"sph", f"{geom.radius:.3f}"])  # type: ignore
+
+        return "_".join(parts)
+
+    def _create_macro_for_group(
+        self, signature: str, group: list[tuple[Link, Joint | None]], root: ET.Element
+    ) -> None:
+        """Create a macro for a group of similar links.
+
+        Args:
+            signature: Group signature
+            group: List of (link, joint) tuples
+            root: XML root element
+        """
+        # Take first link as template
+        template_link, template_joint = group[0]
+
+        # Create macro name from signature
+        macro_name = signature.split("_")[1] if "_" in signature else "link"
+        macro_name = f"{macro_name}_macro"
+
+        # Create macro element
+        macro_elem = ET.Element("xacro:macro")
+        macro_elem.set("name", macro_name)
+        macro_elem.set("params", "name parent xyz rpy")
+
+        # Add comment
+        comment = ET.Comment(f" Macro for {len(group)} similar {macro_name}s ")
+        macro_elem.append(comment)
+
+        # Store macro info
+        self.generated_macros.append({
+            "element": macro_elem,
+            "name": macro_name,
+            "instances": [link.name for link, _ in group],
+        })
+
+        # Note: Full macro content generation would require converting link/joint XML
+        # For now, we just create the macro structure as a placeholder
+        # In a full implementation, we'd:
+        # 1. Generate link element with parameterized name
+        # 2. Generate joint element with parameterized parent, xyz, rpy
+        # 3. Replace instances in root with macro calls
 
     def _element_to_string(self, element: ET.Element) -> str:
         """Convert XML element to string with pretty printing."""
