@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import pytest
 
-from linkforge.core.models import Box, Capsule, Cylinder, InertiaTensor, Sphere, Vector3
+from linkforge.core.models import Box, Capsule, Cylinder, InertiaTensor, Mesh, Sphere, Vector3
 from linkforge.core.physics import (
     calculate_box_inertia,
     calculate_capsule_inertia,
     calculate_cylinder_inertia,
     calculate_inertia,
+    calculate_mesh_inertia,
     calculate_sphere_inertia,
 )
 
@@ -181,3 +182,71 @@ class TestCalculateInertia:
         inertia = calculate_inertia(capsule, mass=1.0)
         expected = calculate_capsule_inertia(capsule, mass=1.0)
         assert inertia == expected
+
+    def test_mesh(self):
+        """Test calculation for mesh."""
+        mesh = Mesh(filepath="test.stl")
+        inertia = calculate_inertia(mesh, mass=1.0)
+        expected = calculate_mesh_inertia(mesh, mass=1.0)
+        assert inertia == expected
+
+    def test_zero_mass(self):
+        """Test that zero mass returns zero inertia."""
+        box = Box(size=Vector3(1.0, 1.0, 1.0))
+        inertia = calculate_inertia(box, mass=0.0)
+        assert inertia == InertiaTensor.zero()
+
+    def test_negative_mass(self):
+        """Test that negative mass returns zero inertia."""
+        sphere = Sphere(radius=1.0)
+        inertia = calculate_inertia(sphere, mass=-1.0)
+        assert inertia == InertiaTensor.zero()
+
+    def test_unsupported_geometry_type(self):
+        """Test that unsupported geometry raises ValueError."""
+
+        class UnsupportedGeometry:
+            """Fake unsupported geometry."""
+
+            pass
+
+        with pytest.raises(ValueError, match="Unsupported geometry type"):
+            calculate_inertia(UnsupportedGeometry(), mass=1.0)  # type: ignore
+
+
+class TestMeshInertia:
+    """Tests for mesh inertia calculation."""
+
+    def test_mesh_default_approximation(self):
+        """Test mesh inertia uses box approximation by default."""
+        mesh = Mesh(filepath="robot.stl")
+        mass = 5.0
+        inertia = calculate_mesh_inertia(mesh, mass)
+
+        # Should return non-zero inertia
+        assert inertia.ixx > 0
+        assert inertia.iyy > 0
+        assert inertia.izz > 0
+
+    def test_mesh_with_scale(self):
+        """Test mesh inertia with custom scale."""
+        mesh = Mesh(filepath="model.dae", scale=Vector3(2.0, 2.0, 2.0))
+        mass = 10.0
+        inertia = calculate_mesh_inertia(mesh, mass)
+
+        # Larger scale should give larger inertia
+        assert inertia.ixx > 0
+        assert inertia.iyy > 0
+        assert inertia.izz > 0
+
+    def test_mesh_zero_mass(self):
+        """Test that zero mass returns zero inertia."""
+        mesh = Mesh(filepath="test.stl")
+        inertia = calculate_mesh_inertia(mesh, mass=0.0)
+        assert inertia == InertiaTensor.zero()
+
+    def test_mesh_negative_mass(self):
+        """Test that negative mass returns zero inertia."""
+        mesh = Mesh(filepath="test.stl")
+        inertia = calculate_mesh_inertia(mesh, mass=-1.0)
+        assert inertia == InertiaTensor.zero()
