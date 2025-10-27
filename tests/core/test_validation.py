@@ -1,10 +1,9 @@
 """Tests for the enhanced validation system."""
 
-from linkforge.core.models.geometry import Box
 from linkforge.core.models.joint import Joint, JointLimits, JointType
-from linkforge.core.models.link import Inertial, InertiaTensor, Link, Visual
+from linkforge.core.models.link import Inertial, Link
 from linkforge.core.models.robot import Robot
-from linkforge.core.validation import RobotValidator, Severity, ValidationResult
+from linkforge.core.validation import RobotValidator, ValidationResult
 
 
 def test_validation_result_creation():
@@ -135,12 +134,8 @@ def test_duplicate_joint_names():
     robot.add_link(link2)
 
     # Add duplicate joints by manipulating list directly
-    robot.joints.append(
-        Joint(name="duplicate", type=JointType.FIXED, parent="base", child="link1")
-    )
-    robot.joints.append(
-        Joint(name="duplicate", type=JointType.FIXED, parent="base", child="link2")
-    )
+    robot.joints.append(Joint(name="duplicate", type=JointType.FIXED, parent="base", child="link1"))
+    robot.joints.append(Joint(name="duplicate", type=JointType.FIXED, parent="base", child="link2"))
 
     validator = RobotValidator(robot)
     result = validator.validate()
@@ -204,9 +199,7 @@ def test_disconnected_link():
     robot.add_link(link2)
 
     # Only connect link1 to base
-    robot.add_joint(
-        Joint(name="joint1", type=JointType.FIXED, parent="base", child="link1")
-    )
+    robot.add_joint(Joint(name="joint1", type=JointType.FIXED, parent="base", child="link1"))
 
     validator = RobotValidator(robot)
     result = validator.validate()
@@ -231,18 +224,12 @@ def test_multiple_parent_joints():
     robot.add_link(link2)
 
     # Add first joint normally
-    robot.add_joint(
-        Joint(name="joint1", type=JointType.FIXED, parent="base", child="link1")
-    )
+    robot.add_joint(Joint(name="joint1", type=JointType.FIXED, parent="base", child="link1"))
 
     # Bypass add_joint validation to create invalid structure
     # Both joints have link2 as child (link2 has multiple parents)
-    robot.joints.append(
-        Joint(name="joint2", type=JointType.FIXED, parent="base", child="link2")
-    )
-    robot.joints.append(
-        Joint(name="joint3", type=JointType.FIXED, parent="link1", child="link2")
-    )
+    robot.joints.append(Joint(name="joint2", type=JointType.FIXED, parent="base", child="link2"))
+    robot.joints.append(Joint(name="joint3", type=JointType.FIXED, parent="link1", child="link2"))
 
     validator = RobotValidator(robot)
     result = validator.validate()

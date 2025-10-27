@@ -19,11 +19,11 @@ from pathlib import Path
 from typing import Any
 from xml.dom import minidom
 
-from ..models.robot import Robot
-from ..models.material import Material
-from ..models.link import Link
+from ..models.geometry import GeometryType
 from ..models.joint import Joint
-from ..models.geometry import Box, Cylinder, Sphere, GeometryType
+from ..models.link import Link
+from ..models.material import Material
+from ..models.robot import Robot
 from .urdf import URDFGenerator
 
 
@@ -182,7 +182,9 @@ class XACROGenerator:
         # Extract macros (top-level)
         macros_root = ET.Element("robot")
         macros_root.set("xmlns:xacro", "http://www.ros.org/wiki/xacro")
-        for macro_elem in list(root.findall("xacro:macro", {"xacro": "http://www.ros.org/wiki/xacro"})):
+        for macro_elem in list(
+            root.findall("xacro:macro", {"xacro": "http://www.ros.org/wiki/xacro"})
+        ):
             macros_root.append(macro_elem)
             root.remove(macro_elem)
 
@@ -348,11 +350,11 @@ class XACROGenerator:
 
         # Add geometry dimensions to signature
         if geom.type == GeometryType.BOX:
-            parts.extend([f"box", f"{geom.size.x:.3f}", f"{geom.size.y:.3f}", f"{geom.size.z:.3f}"])  # type: ignore
+            parts.extend(["box", f"{geom.size.x:.3f}", f"{geom.size.y:.3f}", f"{geom.size.z:.3f}"])  # type: ignore
         elif geom.type == GeometryType.CYLINDER:
-            parts.extend([f"cyl", f"{geom.radius:.3f}", f"{geom.length:.3f}"])  # type: ignore
+            parts.extend(["cyl", f"{geom.radius:.3f}", f"{geom.length:.3f}"])  # type: ignore
         elif geom.type == GeometryType.SPHERE:
-            parts.extend([f"sph", f"{geom.radius:.3f}"])  # type: ignore
+            parts.extend(["sph", f"{geom.radius:.3f}"])  # type: ignore
 
         return "_".join(parts)
 
@@ -383,11 +385,13 @@ class XACROGenerator:
         macro_elem.append(comment)
 
         # Store macro info
-        self.generated_macros.append({
-            "element": macro_elem,
-            "name": macro_name,
-            "instances": [link.name for link, _ in group],
-        })
+        self.generated_macros.append(
+            {
+                "element": macro_elem,
+                "name": macro_name,
+                "instances": [link.name for link, _ in group],
+            }
+        )
 
         # Note: Full macro content generation would require converting link/joint XML
         # For now, we just create the macro structure as a placeholder

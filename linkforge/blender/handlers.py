@@ -48,7 +48,11 @@ def sync_object_names(scene):
             _previous_object_names[obj_id] = current_name
 
         # Check if this is a robot joint
-        elif obj.type == "EMPTY" and hasattr(obj, "linkforge_joint") and obj.linkforge_joint.is_robot_joint:
+        elif (
+            obj.type == "EMPTY"
+            and hasattr(obj, "linkforge_joint")
+            and obj.linkforge_joint.is_robot_joint
+        ):
             obj_id = obj.as_pointer()
             old_name = _previous_object_names.get(obj_id)
             current_name = obj.name

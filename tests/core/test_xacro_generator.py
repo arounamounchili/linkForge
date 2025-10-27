@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import math
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -11,19 +10,14 @@ import pytest
 from linkforge.core.generators import XACROGenerator
 from linkforge.core.models import (
     Box,
-    Collision,
     Color,
     Cylinder,
-    Inertial,
-    InertiaTensor,
     Joint,
-    JointLimits,
     JointType,
     Link,
     Material,
     Robot,
     Sphere,
-    Transform,
     Vector3,
     Visual,
 )
@@ -193,7 +187,7 @@ class TestXACROGenerator:
             extract_dimensions=True,
             generate_macros=False,
         )
-        xacro = generator.generate(robot)
+        generator.generate(robot)
 
         # Check that dimension properties were tracked
         # (dimension_properties stores dimensions used 2+ times)
@@ -229,7 +223,7 @@ class TestXACROGenerator:
             extract_dimensions=False,
             generate_macros=True,
         )
-        xacro = generator.generate(robot)
+        generator.generate(robot)
 
         # Check that macro was generated
         assert len(generator.generated_macros) >= 1
@@ -270,7 +264,7 @@ class TestXACROGenerator:
             extract_dimensions=False,
             generate_macros=True,
         )
-        xacro = generator.generate(robot)
+        generator.generate(robot)
 
         # Should not generate macros (all geometries are different)
         assert len(generator.generated_macros) == 0

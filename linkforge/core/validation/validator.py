@@ -162,7 +162,7 @@ class RobotValidator:
                     title="Multiple parent joints",
                     message=f"Link '{link.name}' has {count} parent joints (should have exactly 1)",
                     affected_objects=[link.name],
-                    suggestion=f"Remove extra joints. Each link can only have one parent.",
+                    suggestion="Remove extra joints. Each link can only have one parent.",
                 )
 
     def _check_mass_properties(self) -> None:

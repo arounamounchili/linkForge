@@ -6,9 +6,9 @@ and LinkForge's core data models.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
 from dataclasses import replace
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     # Type stubs for Blender types when type checking

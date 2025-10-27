@@ -76,7 +76,12 @@ class LINKFORGE_PT_validation_panel(Panel):
             error_box.label(text=f"Errors ({validation.error_count}):", icon="ERROR")
 
             # Toggle to show/hide errors
-            error_box.prop(validation, "show_errors", toggle=True, icon="TRIA_DOWN" if validation.show_errors else "TRIA_RIGHT")
+            error_box.prop(
+                validation,
+                "show_errors",
+                toggle=True,
+                icon="TRIA_DOWN" if validation.show_errors else "TRIA_RIGHT",
+            )
 
             if validation.show_errors:
                 for i in range(validation.error_count):
@@ -112,7 +117,12 @@ class LINKFORGE_PT_validation_panel(Panel):
             warning_box.label(text=f"Warnings ({validation.warning_count}):", icon="ERROR")
 
             # Toggle to show/hide warnings
-            warning_box.prop(validation, "show_warnings", toggle=True, icon="TRIA_DOWN" if validation.show_warnings else "TRIA_RIGHT")
+            warning_box.prop(
+                validation,
+                "show_warnings",
+                toggle=True,
+                icon="TRIA_DOWN" if validation.show_warnings else "TRIA_RIGHT",
+            )
 
             if validation.show_warnings:
                 for i in range(validation.warning_count):

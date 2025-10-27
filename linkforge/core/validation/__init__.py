@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .result import ValidationResult, ValidationIssue, Severity
+from .result import Severity, ValidationIssue, ValidationResult
 from .validator import RobotValidator
 
 __all__ = [
