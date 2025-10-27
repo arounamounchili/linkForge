@@ -468,8 +468,9 @@ def scene_to_robot(context, meshes_dir: Path | None = None) -> Robot:
 
     if root_link and Matrix:
         root_name, root_obj = root_link
-        # Root link frame is at root object position
-        link_frames[root_name] = root_obj.matrix_world.copy()
+        # Root link frame is at origin (standard URDF convention)
+        # Visual/collision will be offset by root object's world position
+        link_frames[root_name] = Matrix.Identity(4)
 
         # Calculate child link frames
         def calc_child_frames(parent_name):
