@@ -6,19 +6,27 @@ and LinkForge's core data models.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
 from dataclasses import replace
 from pathlib import Path
 
-try:
-    import bpy
-    from mathutils import Matrix, Vector
-except ImportError:
-    # Allow importing without Blender
-    bpy = None  # type: ignore
-    Matrix = Vector = None  # type: ignore
+if TYPE_CHECKING:
+    # Type stubs for Blender types when type checking
+    bpy: Any
+    Matrix: Any
+    Vector: Any
+else:
+    try:
+        import bpy
+        from mathutils import Matrix, Vector
+    except ImportError:
+        # Allow importing without Blender
+        bpy = None  # type: ignore
+        Matrix = Vector = None  # type: ignore
 
 from ...core.models import (
     Box,
+    Capsule,
     Collision,
     Color,
     Cylinder,
@@ -42,7 +50,7 @@ from ...core.models import (
 from ...core.physics import calculate_inertia
 
 
-def blender_to_vector3(vec) -> Vector3:
+def blender_to_vector3(vec: Any) -> Vector3:
     """Convert Blender Vector to Vector3.
 
     Args:
@@ -69,7 +77,7 @@ def clean_float(value: float, epsilon: float = 1e-10) -> float:
     return value
 
 
-def matrix_to_transform(matrix) -> Transform:
+def matrix_to_transform(matrix: Any) -> Transform:
     """Convert Blender 4x4 matrix to Transform.
 
     Args:
@@ -101,7 +109,7 @@ def matrix_to_transform(matrix) -> Transform:
 
 
 def get_object_geometry(
-    obj,
+    obj: Any,
     geometry_type: str = "MESH",
     link_name: str | None = None,
     geom_purpose: str = "visual",
@@ -177,7 +185,7 @@ def get_object_geometry(
     return None
 
 
-def get_object_material(obj, props) -> Material | None:
+def get_object_material(obj: Any, props: Any) -> Material | None:
     """Extract material from Blender object.
 
     Args:
@@ -236,10 +244,10 @@ def get_object_material(obj, props) -> Material | None:
 
 
 def blender_link_to_core_with_origin(
-    obj,
+    obj: Any,
     visual_origin: Transform,
     meshes_dir: Path | None = None,
-    robot_props=None,
+    robot_props: Any = None,
 ) -> Link | None:
     """Convert Blender object with LinkPropertyGroup to Core Link.
 
@@ -344,7 +352,7 @@ def blender_link_to_core_with_origin(
     )
 
 
-def blender_joint_to_core(obj, scene) -> Joint | None:
+def blender_joint_to_core(obj: Any, scene: Any) -> Joint | None:
     """Convert Blender Empty with JointPropertyGroup to Core Joint.
 
     Args:
@@ -424,7 +432,7 @@ def blender_joint_to_core(obj, scene) -> Joint | None:
     )
 
 
-def scene_to_robot(context, meshes_dir: Path | None = None) -> Robot:
+def scene_to_robot(context: Any, meshes_dir: Path | None = None) -> Robot:
     """Convert entire Blender scene to Core Robot.
 
     Args:
@@ -473,7 +481,7 @@ def scene_to_robot(context, meshes_dir: Path | None = None) -> Robot:
         link_frames[root_name] = Matrix.Identity(4)
 
         # Calculate child link frames
-        def calc_child_frames(parent_name):
+        def calc_child_frames(parent_name: str) -> None:
             for child_name, (parent, joint_obj) in joints_map.items():
                 if parent == parent_name and child_name not in link_frames:
                     # Child frame = parent frame transformed by joint transform
