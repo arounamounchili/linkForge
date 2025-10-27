@@ -375,26 +375,9 @@ def blender_joint_to_core(obj, scene) -> Joint | None:
     else:  # CUSTOM
         axis = Vector3(props.custom_axis_x, props.custom_axis_y, props.custom_axis_z)
 
-    # Joint origin - calculate relative to parent link
-    # Find parent link object
-    parent_link_name = props.parent_link if props.parent_link != "NONE" else ""
-    parent_obj = None
-    if parent_link_name and scene:
-        for o in scene.objects:
-            if hasattr(o, "linkforge") and o.linkforge.is_robot_link:
-                if o.linkforge.link_name == parent_link_name:
-                    parent_obj = o
-                    break
-
-    # Calculate origin relative to parent (or world if no parent found)
-    if parent_obj and Matrix:
-        # Joint origin = joint_world * parent_world^-1 (in parent's coordinate frame)
-        parent_inv = parent_obj.matrix_world.inverted()
-        joint_relative = parent_inv @ obj.matrix_world
-        origin = matrix_to_transform(joint_relative)
-    else:
-        # No parent found, use absolute world transform
-        origin = matrix_to_transform(obj.matrix_world)
+    # Joint origin is already calculated relative to parent in converters.scene_to_robot
+    # Just use the joint's world transform here, will be made relative in scene_to_robot
+    origin = matrix_to_transform(obj.matrix_world)
 
     # Joint limits
     limits = None
@@ -459,31 +442,62 @@ def scene_to_robot(context, meshes_dir: Path | None = None) -> Robot:
 
     robot = Robot(name=robot_name)
 
-    # First pass: Build map of joint Empty positions for each child link
-    # This tells us where each link frame will be
-    link_frame_positions = {}  # link_name -> joint Empty matrix_world
+    # First pass: Find root link and build joint map
+    root_link = None
+    joints_map = {}  # child_link_name -> (parent_link_name, joint_empty_obj)
+
     for obj in scene.objects:
         if obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint:
             props = obj.linkforge_joint
-            child_link_name = props.child_link if props.child_link != "NONE" else ""
-            if child_link_name:
-                link_frame_positions[child_link_name] = obj.matrix_world.copy()
+            parent_name = props.parent_link if props.parent_link != "NONE" else ""
+            child_name = props.child_link if props.child_link != "NONE" else ""
+            if parent_name and child_name:
+                joints_map[child_name] = (parent_name, obj)
 
-    # Second pass: Collect all links with correct visual origins
+    # Find root link (link with no parent joint)
+    for obj in scene.objects:
+        if obj.linkforge.is_robot_link:
+            link_name = obj.linkforge.link_name if obj.linkforge.link_name else obj.name
+            if link_name not in joints_map:
+                root_link = (link_name, obj)
+                break
+
+    # Second pass: Calculate link frame positions recursively
+    link_frames = {}  # link_name -> world matrix where link frame is
+
+    if root_link and Matrix:
+        root_name, root_obj = root_link
+        # Root link frame is at root object position
+        link_frames[root_name] = root_obj.matrix_world.copy()
+
+        # Calculate child link frames
+        def calc_child_frames(parent_name):
+            for child_name, (parent, joint_obj) in joints_map.items():
+                if parent == parent_name and child_name not in link_frames:
+                    # Child frame = parent frame transformed by joint transform
+                    parent_frame = link_frames[parent_name]
+                    parent_inv = parent_frame.inverted()
+                    joint_rel = parent_inv @ joint_obj.matrix_world
+                    child_frame = parent_frame @ joint_rel
+                    link_frames[child_name] = child_frame
+                    calc_child_frames(child_name)
+
+        calc_child_frames(root_name)
+
+    # Third pass: Collect all links with correct visual origins
     for obj in scene.objects:
         if obj.linkforge.is_robot_link:
             link_name = obj.linkforge.link_name if obj.linkforge.link_name else obj.name
 
             # Calculate visual origin relative to link frame
-            if link_name in link_frame_positions and Matrix:
-                # Child link: calculate visual origin relative to joint Empty position
-                link_frame = link_frame_positions[link_name]
+            if link_name in link_frames and Matrix:
+                link_frame = link_frames[link_name]
                 link_frame_inv = link_frame.inverted()
                 obj_relative = link_frame_inv @ obj.matrix_world
                 visual_origin = matrix_to_transform(obj_relative)
             else:
-                # Root link: use object's world transform as visual origin
-                visual_origin = matrix_to_transform(obj.matrix_world)
+                # Fallback: identity
+                visual_origin = Transform.identity()
 
             # Create link with calculated visual origin
             link = blender_link_to_core_with_origin(obj, visual_origin, meshes_dir, robot_props)
@@ -493,11 +507,19 @@ def scene_to_robot(context, meshes_dir: Path | None = None) -> Robot:
                 except ValueError as e:
                     print(f"Warning: Could not add link {link.name}: {e}")
 
-    # Third pass: Collect all joints
+    # Fourth pass: Collect all joints with correct origins
     for obj in scene.objects:
         if obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint:
             joint = blender_joint_to_core(obj, scene)
             if joint:
+                # Calculate joint origin relative to parent link frame
+                parent_name = joint.parent
+                if parent_name and parent_name in link_frames and Matrix:
+                    parent_frame = link_frames[parent_name]
+                    parent_frame_inv = parent_frame.inverted()
+                    joint_relative = parent_frame_inv @ obj.matrix_world
+                    joint.origin = matrix_to_transform(joint_relative)
+
                 try:
                     robot.add_joint(joint)
                 except ValueError as e:
