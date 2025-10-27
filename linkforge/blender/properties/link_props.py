@@ -210,7 +210,7 @@ class LinkPropertyGroup(PropertyGroup):
     use_material: BoolProperty(  # type: ignore
         name="Use Material",
         description="Export material/color for this link",
-        default=True,
+        default=False,
     )
 
     material_source: EnumProperty(  # type: ignore

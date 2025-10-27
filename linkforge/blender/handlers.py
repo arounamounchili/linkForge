@@ -20,7 +20,7 @@ _previous_object_names = {}
 
 @persistent
 def sync_object_names(scene):
-    """Handler to sync object names to link names when objects are renamed in Outliner.
+    """Handler to sync object names to link/joint names when objects are renamed in Outliner.
 
     This runs after every depsgraph update.
     """
@@ -31,23 +31,37 @@ def sync_object_names(scene):
 
     # Check each object for name changes
     for obj in scene.objects:
-        # Skip if not a robot link
-        if not hasattr(obj, "linkforge") or not obj.linkforge.is_robot_link:
-            continue
+        # Check if this is a robot link
+        if hasattr(obj, "linkforge") and obj.linkforge.is_robot_link:
+            obj_id = obj.as_pointer()
+            old_name = _previous_object_names.get(obj_id)
+            current_name = obj.name
 
-        obj_id = obj.as_pointer()
-        old_name = _previous_object_names.get(obj_id)
-        current_name = obj.name
+            # If name changed and it wasn't initiated by LinkForge (check link_name)
+            if old_name is not None and old_name != current_name:
+                # Only update link_name if it differs (avoid infinite loops)
+                if obj.linkforge.link_name != current_name:
+                    # User renamed in Outliner, sync to link_name
+                    obj.linkforge.link_name = current_name
 
-        # If name changed and it wasn't initiated by LinkForge (check link_name)
-        if old_name is not None and old_name != current_name:
-            # Only update link_name if it differs (avoid infinite loops)
-            if obj.linkforge.link_name != current_name:
-                # User renamed in Outliner, sync to link_name
-                obj.linkforge.link_name = current_name
+            # Update tracking
+            _previous_object_names[obj_id] = current_name
 
-        # Update tracking
-        _previous_object_names[obj_id] = current_name
+        # Check if this is a robot joint
+        elif obj.type == "EMPTY" and hasattr(obj, "linkforge_joint") and obj.linkforge_joint.is_robot_joint:
+            obj_id = obj.as_pointer()
+            old_name = _previous_object_names.get(obj_id)
+            current_name = obj.name
+
+            # If name changed and it wasn't initiated by LinkForge (check joint_name)
+            if old_name is not None and old_name != current_name:
+                # Only update joint_name if it differs (avoid infinite loops)
+                if obj.linkforge_joint.joint_name != current_name:
+                    # User renamed in Outliner, sync to joint_name
+                    obj.linkforge_joint.joint_name = current_name
+
+            # Update tracking
+            _previous_object_names[obj_id] = current_name
 
 
 def register():
