@@ -10,24 +10,12 @@ import pytest
 from linkforge.core.models import (
     Box,
     Capsule,
-    Collision,
     Color,
     Cylinder,
-    Inertial,
-    InertiaTensor,
-    Joint,
-    JointDynamics,
-    JointLimits,
-    JointMimic,
     JointType,
-    Link,
     Material,
     Mesh,
-    Robot,
     Sphere,
-    Transform,
-    Vector3,
-    Visual,
 )
 from linkforge.core.parsers.urdf_parser import (
     parse_geometry,
@@ -184,7 +172,9 @@ class TestParseGeometry:
 
     def test_parse_mesh_with_scale(self):
         """Test parsing mesh with custom scale."""
-        elem = ET.fromstring('<geometry><mesh filename="model.dae" scale="0.001 0.001 0.001"/></geometry>')
+        elem = ET.fromstring(
+            '<geometry><mesh filename="model.dae" scale="0.001 0.001 0.001"/></geometry>'
+        )
         geom = parse_geometry(elem)
 
         assert isinstance(geom, Mesh)
