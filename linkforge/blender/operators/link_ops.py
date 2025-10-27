@@ -10,6 +10,8 @@ except ImportError:
     bpy = None  # type: ignore
     Operator = object
 
+from ..properties.link_props import sanitize_urdf_name
+
 
 class LINKFORGE_OT_mark_as_link(Operator):
     """Mark selected object as a robot link"""
@@ -31,9 +33,9 @@ class LINKFORGE_OT_mark_as_link(Operator):
         # Enable link properties
         obj.linkforge.is_robot_link = True
 
-        # Set default link name if empty
+        # Set default link name if empty (sanitized version of object name)
         if not obj.linkforge.link_name:
-            obj.linkforge.link_name = obj.name.replace(".", "_").replace(" ", "_")
+            obj.linkforge.link_name = sanitize_urdf_name(obj.name)
 
         self.report({"INFO"}, f"Marked '{obj.name}' as robot link '{obj.linkforge.link_name}'")
         return {"FINISHED"}

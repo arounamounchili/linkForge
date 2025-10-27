@@ -60,14 +60,12 @@ dmypy.json
 *.pyc
 *.pyo
 
-# Documentation
-docs/_build/
-docs/_static/
-docs/_templates/
-
 # Logs
 *.log
 
 # Temporary files
 tmp/
 temp/
+
+# Planning documents (for reference only, not versioned)
+.planning/

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -25,7 +26,7 @@ class Vector3:
     y: float
     z: float
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[float]:
         """Allow unpacking: x, y, z = vector."""
         return iter((self.x, self.y, self.z))
 

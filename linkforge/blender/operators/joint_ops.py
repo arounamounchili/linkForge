@@ -12,6 +12,8 @@ except ImportError:
     Operator = object
     Vector = None  # type: ignore
 
+from ..properties.link_props import sanitize_urdf_name
+
 
 class LINKFORGE_OT_create_joint(Operator):
     """Create a new robot joint at 3D cursor"""
@@ -30,7 +32,7 @@ class LINKFORGE_OT_create_joint(Operator):
 
         # Enable joint properties
         joint_empty.linkforge_joint.is_robot_joint = True
-        joint_empty.linkforge_joint.joint_name = joint_empty.name.replace(".", "_")
+        joint_empty.linkforge_joint.joint_name = sanitize_urdf_name(joint_empty.name)
 
         # Set default joint type
         joint_empty.linkforge_joint.joint_type = "REVOLUTE"

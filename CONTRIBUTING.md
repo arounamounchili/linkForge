@@ -131,11 +131,43 @@ def test_robot_validates_duplicate_link_names():
         Robot(name="test", links=[link1, link2])
 ```
 
-## Submitting Changes
+## Development Workflow
 
-1. **Create a feature branch**:
+### Branching Strategy
+
+LinkForge uses a simplified Git Flow:
+
+- **`main`** - Production releases only (stable, tagged versions)
+- **`develop`** - Active development branch (default for PRs)
+- **`feature/*`** - New features (branch from `develop`)
+- **`hotfix/*`** - Critical production fixes (branch from `main`)
+
+### Working on Features
+
+1. **Start from develop**:
+   ```bash
+   git checkout develop
+   git pull origin develop
+   ```
+
+2. **Create a feature branch**:
    ```bash
    git checkout -b feature/my-feature
+   ```
+
+3. **Make your changes and commit regularly**
+
+4. **Keep your branch updated**:
+   ```bash
+   git fetch origin
+   git rebase origin/develop
+   ```
+
+## Submitting Changes
+
+1. **Ensure you're on your feature branch**:
+   ```bash
+   git checkout feature/my-feature
    ```
 
 2. **Make your changes**:
@@ -165,9 +197,13 @@ def test_robot_validates_duplicate_link_names():
 6. **Open a Pull Request**:
    - Go to https://github.com/arounamounchili/linkforge
    - Click "Pull Requests" → "New Pull Request"
-   - Select your fork and branch
+   - **Base branch**: `develop` (not `main`)
+   - **Compare branch**: Your feature branch
    - Provide a clear description of your changes
+   - Reference any related issues (e.g., "Fixes #42")
    - Include screenshots/videos for UI changes
+
+**Note**: PRs should target `develop` branch. Only maintainers merge `develop` → `main` for releases.
 
 ## Need Help?
 

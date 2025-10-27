@@ -169,8 +169,8 @@ def calculate_mesh_inertia(mesh: Mesh, mass: float, method: str = "box") -> Iner
 
     # Placeholder: return conservative estimate
     # In practice, this will be computed from actual mesh geometry in Blender
-    # Default to a unit cube for safety
-    unit_box = Box(size=(1.0, 1.0, 1.0) * mesh.scale)
+    # Default to a scaled unit cube for safety
+    unit_box = Box(size=mesh.scale)
     return calculate_box_inertia(unit_box, mass)
 
 

@@ -98,12 +98,6 @@ class LINKFORGE_PT_joint_panel(Panel):
             col.prop(props, "mimic_multiplier")
             col.prop(props, "mimic_offset")
 
-        # Visual helpers
-        box.separator()
-        row = box.row(align=True)
-        row.prop(props, "show_axis", toggle=True)
-        row.prop(props, "show_limits", toggle=True)
-
         # Actions
         box.separator()
         box.operator("linkforge.remove_joint", icon="X")
