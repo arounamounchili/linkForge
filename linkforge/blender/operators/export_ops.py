@@ -59,24 +59,37 @@ class LINKFORGE_OT_export_urdf(Operator, ExportHelper):
 
         # Validate if requested
         if robot_props.validate_before_export:
-            errors = robot.validate_tree_structure()
-            if errors:
-                error_msg = "Validation errors:\\n" + "\\n".join(errors[:5])
-                if len(errors) > 5:
-                    error_msg += f"\\n... and {len(errors) - 5} more errors"
-                self.report({"ERROR"}, error_msg)
+            from ...core.validation import RobotValidator
+
+            validator = RobotValidator(robot)
+            result = validator.validate()
+
+            if not result.is_valid:
+                self.report(
+                    {"ERROR"},
+                    f"Cannot export: {result.error_count} validation error(s). "
+                    f"Run validation to see details.",
+                )
                 return {"CANCELLED"}
 
         # Generate URDF/XACRO
         try:
             if robot_props.export_format == "URDF":
-                generator = URDFGenerator(pretty_print=True, urdf_path=output_path)
-                generator.write(robot, output_path)
-                self.report({"INFO"}, f"Exported URDF to {output_path}")
+                urdf_generator = URDFGenerator(pretty_print=True, urdf_path=output_path)
+                urdf_generator.write(robot, output_path)
+                msg = f"✓ Exported URDF to {output_path}"
+                if meshes_dir:
+                    msg += f" (meshes in {meshes_dir})"
+                self.report({"INFO"}, msg)
+                print(msg)  # Also print to console
             else:  # XACRO
-                generator = XACROGenerator(pretty_print=True)
-                generator.write(robot, output_path)
-                self.report({"INFO"}, f"Exported XACRO to {output_path}")
+                xacro_generator = XACROGenerator(pretty_print=True)
+                xacro_generator.write(robot, output_path)
+                msg = f"✓ Exported XACRO to {output_path}"
+                if meshes_dir:
+                    msg += f" (meshes in {meshes_dir})"
+                self.report({"INFO"}, msg)
+                print(msg)  # Also print to console
 
             return {"FINISHED"}
 
@@ -146,7 +159,12 @@ class LINKFORGE_OT_validate_robot(Operator):
 
     def execute(self, context):
         """Execute validation."""
+        from ...core.validation import RobotValidator
         from ..utils.converters import scene_to_robot
+
+        # Clear previous results
+        validation_props = context.window_manager.linkforge_validation
+        validation_props.clear()
 
         # Convert scene to robot
         try:
@@ -155,10 +173,37 @@ class LINKFORGE_OT_validate_robot(Operator):
             self.report({"ERROR"}, f"Failed to build robot: {e}")
             return {"CANCELLED"}
 
-        # Validate
-        errors = robot.validate_tree_structure()
+        # Validate using new validator
+        validator = RobotValidator(robot)
+        result = validator.validate()
 
-        if not errors:
+        # Store results in window manager
+        validation_props.has_results = True
+        validation_props.is_valid = result.is_valid
+        validation_props.error_count = result.error_count
+        validation_props.warning_count = result.warning_count
+        validation_props.link_count = len(robot.links)
+        validation_props.joint_count = len(robot.joints)
+        validation_props.dof_count = robot.degrees_of_freedom
+
+        # Store errors
+        for error in result.errors:
+            error_prop = validation_props.errors.add()
+            error_prop.title = error.title
+            error_prop.message = error.message
+            error_prop.suggestion = error.suggestion or ""
+            error_prop.affected_objects = ", ".join(error.affected_objects)
+
+        # Store warnings
+        for warning in result.warnings:
+            warning_prop = validation_props.warnings.add()
+            warning_prop.title = warning.title
+            warning_prop.message = warning.message
+            warning_prop.suggestion = warning.suggestion or ""
+            warning_prop.affected_objects = ", ".join(warning.affected_objects)
+
+        # Report result
+        if result.is_valid and not result.has_warnings:
             self.report(
                 {"INFO"},
                 f"✓ Robot '{robot.name}' is valid! "
@@ -166,20 +211,17 @@ class LINKFORGE_OT_validate_robot(Operator):
                 f"{robot.degrees_of_freedom} DOF)",
             )
             return {"FINISHED"}
+        elif result.is_valid:
+            self.report(
+                {"WARNING"},
+                f"⚠ Robot valid with {result.warning_count} warning(s). Check Validation panel.",
+            )
+            return {"FINISHED"}
         else:
-            # Report first few errors
-            error_summary = "\\n".join(errors[:5])
-            if len(errors) > 5:
-                error_summary += f"\\n... and {len(errors) - 5} more errors"
-
-            self.report({"WARNING"}, f"Validation errors:\\n{error_summary}")
-
-            # Print all errors to console
-            print("\\n=== LinkForge Validation Errors ===")
-            for i, error in enumerate(errors, 1):
-                print(f"{i}. {error}")
-            print("===================================\\n")
-
+            self.report(
+                {"ERROR"},
+                f"✗ Validation failed: {result.error_count} error(s), {result.warning_count} warning(s). Check Validation panel.",
+            )
             return {"CANCELLED"}
 
 

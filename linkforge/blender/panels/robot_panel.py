@@ -166,10 +166,6 @@ class LINKFORGE_PT_robot_panel(Panel):
             tree_box.label(text="Kinematic Tree:", icon="OUTLINER_OB_ARMATURE")
             draw_tree_recursive(tree_box, tree, root_link)
 
-        # Validation
-        box.separator()
-        box.operator("linkforge.validate_robot", icon="CHECKMARK")
-
         # Visual helpers
         box.separator()
         box.label(text="Visualization:", icon="HIDE_OFF")

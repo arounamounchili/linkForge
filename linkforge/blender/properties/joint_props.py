@@ -15,11 +15,41 @@ except ImportError:
     BoolProperty = EnumProperty = FloatProperty = StringProperty = None
 
 
+def update_joint_name(self, context):
+    """Update callback when joint_name changes - sync to object name."""
+    if not bpy:
+        return
+
+    # Find the object that owns this property
+    obj = None
+    for o in context.scene.objects:
+        if hasattr(o, "linkforge_joint") and o.linkforge_joint == self:
+            obj = o
+            break
+
+    if obj is None:
+        return
+
+    # Only sync if this is marked as a robot joint and has a name
+    if not self.is_robot_joint or not self.joint_name:
+        return
+
+    # Import sanitize function from link_props
+    from .link_props import sanitize_urdf_name
+
+    # Sanitize joint name for URDF
+    sanitized_name = sanitize_urdf_name(self.joint_name)
+
+    # Update object name to match joint name
+    if obj.name != sanitized_name:
+        obj.name = sanitized_name
+
+
 def get_available_links(self, context):
     """Get list of available links in the scene for dropdown."""
     import bpy
 
-    items = [("", "None", "No link selected")]
+    items = [("NONE", "None", "No link selected")]
 
     # Use bpy.context.scene to ensure we get the current scene
     try:
@@ -56,6 +86,7 @@ class JointPropertyGroup(PropertyGroup):
         description="Name of the joint in URDF (must be unique)",
         default="",
         maxlen=64,
+        update=update_joint_name,
     )
 
     # Joint type
@@ -209,19 +240,6 @@ class JointPropertyGroup(PropertyGroup):
         name="Offset",
         description="Motion offset",
         default=0.0,
-    )
-
-    # Visual helpers
-    show_axis: BoolProperty(  # type: ignore
-        name="Show Axis",
-        description="Display joint axis in viewport",
-        default=True,
-    )
-
-    show_limits: BoolProperty(  # type: ignore
-        name="Show Limits",
-        description="Display joint limits in viewport",
-        default=True,
     )
 
 

@@ -6,18 +6,27 @@ and LinkForge's core data models.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
-try:
-    import bpy
-    from mathutils import Matrix, Vector
-except ImportError:
-    # Allow importing without Blender
-    bpy = None  # type: ignore
-    Matrix = Vector = None  # type: ignore
+if TYPE_CHECKING:
+    # Type stubs for Blender types when type checking
+    bpy: Any
+    Matrix: Any
+    Vector: Any
+else:
+    try:
+        import bpy
+        from mathutils import Matrix, Vector
+    except ImportError:
+        # Allow importing without Blender
+        bpy = None  # type: ignore
+        Matrix = Vector = None  # type: ignore
 
 from ...core.models import (
     Box,
+    Capsule,
     Collision,
     Color,
     Cylinder,
@@ -41,7 +50,7 @@ from ...core.models import (
 from ...core.physics import calculate_inertia
 
 
-def blender_to_vector3(vec) -> Vector3:
+def blender_to_vector3(vec: Any) -> Vector3:
     """Convert Blender Vector to Vector3.
 
     Args:
@@ -53,7 +62,22 @@ def blender_to_vector3(vec) -> Vector3:
     return Vector3(vec.x, vec.y, vec.z)
 
 
-def matrix_to_transform(matrix) -> Transform:
+def clean_float(value: float, epsilon: float = 1e-10) -> float:
+    """Clean up floating point values to avoid -0.0 and very small numbers.
+
+    Args:
+        value: Float value to clean
+        epsilon: Threshold below which values become 0.0
+
+    Returns:
+        Cleaned float value
+    """
+    if abs(value) < epsilon:
+        return 0.0
+    return value
+
+
+def matrix_to_transform(matrix: Any) -> Transform:
     """Convert Blender 4x4 matrix to Transform.
 
     Args:
@@ -67,17 +91,25 @@ def matrix_to_transform(matrix) -> Transform:
 
     # Extract translation
     translation = matrix.to_translation()
-    xyz = Vector3(translation.x, translation.y, translation.z)
+    xyz = Vector3(
+        clean_float(translation.x),
+        clean_float(translation.y),
+        clean_float(translation.z),
+    )
 
     # Extract rotation (Euler angles in radians)
     rotation = matrix.to_euler("XYZ")
-    rpy = Vector3(rotation.x, rotation.y, rotation.z)
+    rpy = Vector3(
+        clean_float(rotation.x),
+        clean_float(rotation.y),
+        clean_float(rotation.z),
+    )
 
     return Transform(xyz=xyz, rpy=rpy)
 
 
 def get_object_geometry(
-    obj,
+    obj: Any,
     geometry_type: str = "MESH",
     link_name: str | None = None,
     geom_purpose: str = "visual",
@@ -153,7 +185,7 @@ def get_object_geometry(
     return None
 
 
-def get_object_material(obj, props) -> Material | None:
+def get_object_material(obj: Any, props: Any) -> Material | None:
     """Extract material from Blender object.
 
     Args:
@@ -211,15 +243,17 @@ def get_object_material(obj, props) -> Material | None:
     return Material(name=mat_name, color=color)
 
 
-def blender_link_to_core(
-    obj,
+def blender_link_to_core_with_origin(
+    obj: Any,
+    visual_origin: Transform,
     meshes_dir: Path | None = None,
-    robot_props=None,
+    robot_props: Any = None,
 ) -> Link | None:
     """Convert Blender object with LinkPropertyGroup to Core Link.
 
     Args:
         obj: Blender Object with linkforge property group
+        visual_origin: Pre-calculated visual/collision origin transform
         meshes_dir: Optional directory for exporting mesh files
         robot_props: Robot property group with export settings
 
@@ -259,7 +293,7 @@ def blender_link_to_core(
         if visual_geom:
             visual = Visual(
                 geometry=visual_geom,
-                origin=Transform.identity(),
+                origin=visual_origin,
                 material=material,
             )
 
@@ -277,7 +311,7 @@ def blender_link_to_core(
             decimation_ratio=props.collision_decimation_ratio,
         )
         if collision_geom:
-            collision = Collision(geometry=collision_geom, origin=Transform.identity())
+            collision = Collision(geometry=collision_geom, origin=visual_origin)
 
     # Inertial properties
     inertial = None
@@ -306,7 +340,7 @@ def blender_link_to_core(
 
         inertial = Inertial(
             mass=props.mass,
-            origin=Transform.identity(),
+            origin=visual_origin,
             inertia=inertia_tensor,
         )
 
@@ -318,11 +352,12 @@ def blender_link_to_core(
     )
 
 
-def blender_joint_to_core(obj) -> Joint | None:
+def blender_joint_to_core(obj: Any, scene: Any) -> Joint | None:
     """Convert Blender Empty with JointPropertyGroup to Core Joint.
 
     Args:
         obj: Blender Empty object with linkforge_joint property group
+        scene: Blender scene to find parent link object
 
     Returns:
         Core Joint model or None
@@ -349,7 +384,8 @@ def blender_joint_to_core(obj) -> Joint | None:
     else:  # CUSTOM
         axis = Vector3(props.custom_axis_x, props.custom_axis_y, props.custom_axis_z)
 
-    # Joint origin (from Empty's transform)
+    # Joint origin is already calculated relative to parent in converters.scene_to_robot
+    # Just use the joint's world transform here, will be made relative in scene_to_robot
     origin = matrix_to_transform(obj.matrix_world)
 
     # Joint limits
@@ -379,11 +415,15 @@ def blender_joint_to_core(obj) -> Joint | None:
             offset=props.mimic_offset,
         )
 
+    # Handle "NONE" value for parent/child links (when no link is selected)
+    parent = props.parent_link if props.parent_link != "NONE" else ""
+    child = props.child_link if props.child_link != "NONE" else ""
+
     return Joint(
         name=joint_name,
         type=joint_type,
-        parent=props.parent_link,
-        child=props.child_link,
+        parent=parent,
+        child=child,
         origin=origin,
         axis=axis,
         limits=limits,
@@ -392,7 +432,7 @@ def blender_joint_to_core(obj) -> Joint | None:
     )
 
 
-def scene_to_robot(context, meshes_dir: Path | None = None) -> Robot:
+def scene_to_robot(context: Any, meshes_dir: Path | None = None) -> Robot:
     """Convert entire Blender scene to Core Robot.
 
     Args:
@@ -411,21 +451,87 @@ def scene_to_robot(context, meshes_dir: Path | None = None) -> Robot:
 
     robot = Robot(name=robot_name)
 
-    # Collect all links
+    # First pass: Find root link and build joint map
+    root_link = None
+    joints_map = {}  # child_link_name -> (parent_link_name, joint_empty_obj)
+
+    for obj in scene.objects:
+        if obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint:
+            props = obj.linkforge_joint
+            parent_name = props.parent_link if props.parent_link != "NONE" else ""
+            child_name = props.child_link if props.child_link != "NONE" else ""
+            if parent_name and child_name:
+                joints_map[child_name] = (parent_name, obj)
+
+    # Find root link (link with no parent joint)
     for obj in scene.objects:
         if obj.linkforge.is_robot_link:
-            link = blender_link_to_core(obj, meshes_dir, robot_props)
+            link_name = obj.linkforge.link_name if obj.linkforge.link_name else obj.name
+            if link_name not in joints_map:
+                root_link = (link_name, obj)
+                break
+
+    # Second pass: Calculate link frame positions recursively
+    link_frames = {}  # link_name -> world matrix where link frame is
+
+    if root_link and Matrix:
+        root_name, root_obj = root_link
+        # Root link frame is at origin (standard URDF convention)
+        # Visual/collision will be offset by root object's world position
+        link_frames[root_name] = Matrix.Identity(4)
+
+        # Calculate child link frames
+        def calc_child_frames(parent_name: str) -> None:
+            for child_name, (parent, joint_obj) in joints_map.items():
+                if parent == parent_name and child_name not in link_frames:
+                    # Child frame = parent frame transformed by joint transform
+                    parent_frame = link_frames[parent_name]
+                    parent_inv = parent_frame.inverted()
+                    joint_rel = parent_inv @ joint_obj.matrix_world
+                    child_frame = parent_frame @ joint_rel
+                    link_frames[child_name] = child_frame
+                    calc_child_frames(child_name)
+
+        calc_child_frames(root_name)
+
+    # Third pass: Collect all links with correct visual origins
+    for obj in scene.objects:
+        if obj.linkforge.is_robot_link:
+            link_name = obj.linkforge.link_name if obj.linkforge.link_name else obj.name
+
+            # Calculate visual origin relative to link frame
+            if link_name in link_frames and Matrix:
+                link_frame = link_frames[link_name]
+                link_frame_inv = link_frame.inverted()
+                obj_relative = link_frame_inv @ obj.matrix_world
+                visual_origin = matrix_to_transform(obj_relative)
+            else:
+                # Fallback: identity
+                visual_origin = Transform.identity()
+
+            # Create link with calculated visual origin
+            link = blender_link_to_core_with_origin(obj, visual_origin, meshes_dir, robot_props)
             if link:
                 try:
                     robot.add_link(link)
                 except ValueError as e:
                     print(f"Warning: Could not add link {link.name}: {e}")
 
-    # Collect all joints
+    # Fourth pass: Collect all joints with correct origins
     for obj in scene.objects:
         if obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint:
-            joint = blender_joint_to_core(obj)
+            joint = blender_joint_to_core(obj, scene)
             if joint:
+                # Calculate joint origin relative to parent link frame
+                parent_name = joint.parent
+                if parent_name and parent_name in link_frames and Matrix:
+                    parent_frame = link_frames[parent_name]
+                    parent_frame_inv = parent_frame.inverted()
+                    joint_relative = parent_frame_inv @ obj.matrix_world
+                    corrected_origin = matrix_to_transform(joint_relative)
+                    # Create new joint with corrected origin (Joint is frozen dataclass)
+                    joint = replace(joint, origin=corrected_origin)
+
                 try:
                     robot.add_joint(joint)
                 except ValueError as e:

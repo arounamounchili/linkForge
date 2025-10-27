@@ -8,13 +8,14 @@ Property groups store data on Blender objects and scenes:
 
 from __future__ import annotations
 
-from . import joint_props, link_props, robot_props
+from . import joint_props, link_props, robot_props, validation_props
 
 # Module list for registration
 modules = [
     link_props,
     joint_props,
     robot_props,
+    validation_props,
 ]
 
 
@@ -34,6 +35,7 @@ __all__ = [
     "link_props",
     "joint_props",
     "robot_props",
+    "validation_props",
     "register",
     "unregister",
 ]
