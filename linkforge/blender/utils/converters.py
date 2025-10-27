@@ -53,6 +53,21 @@ def blender_to_vector3(vec) -> Vector3:
     return Vector3(vec.x, vec.y, vec.z)
 
 
+def clean_float(value: float, epsilon: float = 1e-10) -> float:
+    """Clean up floating point values to avoid -0.0 and very small numbers.
+
+    Args:
+        value: Float value to clean
+        epsilon: Threshold below which values become 0.0
+
+    Returns:
+        Cleaned float value
+    """
+    if abs(value) < epsilon:
+        return 0.0
+    return value
+
+
 def matrix_to_transform(matrix) -> Transform:
     """Convert Blender 4x4 matrix to Transform.
 
@@ -67,11 +82,19 @@ def matrix_to_transform(matrix) -> Transform:
 
     # Extract translation
     translation = matrix.to_translation()
-    xyz = Vector3(translation.x, translation.y, translation.z)
+    xyz = Vector3(
+        clean_float(translation.x),
+        clean_float(translation.y),
+        clean_float(translation.z),
+    )
 
     # Extract rotation (Euler angles in radians)
     rotation = matrix.to_euler("XYZ")
-    rpy = Vector3(rotation.x, rotation.y, rotation.z)
+    rpy = Vector3(
+        clean_float(rotation.x),
+        clean_float(rotation.y),
+        clean_float(rotation.z),
+    )
 
     return Transform(xyz=xyz, rpy=rpy)
 
@@ -243,9 +266,6 @@ def blender_link_to_core(
     if robot_props and hasattr(robot_props, "mesh_format"):
         mesh_format = robot_props.mesh_format
 
-    # Get object's world transform for visual/collision/inertial origins
-    obj_transform = matrix_to_transform(obj.matrix_world)
-
     # Visual geometry
     visual = None
     if props.use_visual_geometry:
@@ -262,7 +282,7 @@ def blender_link_to_core(
         if visual_geom:
             visual = Visual(
                 geometry=visual_geom,
-                origin=obj_transform,
+                origin=Transform.identity(),
                 material=material,
             )
 
@@ -280,7 +300,7 @@ def blender_link_to_core(
             decimation_ratio=props.collision_decimation_ratio,
         )
         if collision_geom:
-            collision = Collision(geometry=collision_geom, origin=obj_transform)
+            collision = Collision(geometry=collision_geom, origin=Transform.identity())
 
     # Inertial properties
     inertial = None
@@ -309,7 +329,7 @@ def blender_link_to_core(
 
         inertial = Inertial(
             mass=props.mass,
-            origin=obj_transform,
+            origin=Transform.identity(),
             inertia=inertia_tensor,
         )
 
@@ -321,11 +341,12 @@ def blender_link_to_core(
     )
 
 
-def blender_joint_to_core(obj) -> Joint | None:
+def blender_joint_to_core(obj, scene) -> Joint | None:
     """Convert Blender Empty with JointPropertyGroup to Core Joint.
 
     Args:
         obj: Blender Empty object with linkforge_joint property group
+        scene: Blender scene to find parent link object
 
     Returns:
         Core Joint model or None
@@ -352,8 +373,26 @@ def blender_joint_to_core(obj) -> Joint | None:
     else:  # CUSTOM
         axis = Vector3(props.custom_axis_x, props.custom_axis_y, props.custom_axis_z)
 
-    # Joint origin (from Empty's transform)
-    origin = matrix_to_transform(obj.matrix_world)
+    # Joint origin - calculate relative to parent link
+    # Find parent link object
+    parent_link_name = props.parent_link if props.parent_link != "NONE" else ""
+    parent_obj = None
+    if parent_link_name and scene:
+        for o in scene.objects:
+            if hasattr(o, "linkforge") and o.linkforge.is_robot_link:
+                if o.linkforge.link_name == parent_link_name:
+                    parent_obj = o
+                    break
+
+    # Calculate origin relative to parent (or world if no parent found)
+    if parent_obj and Matrix:
+        # Joint origin = joint_world * parent_world^-1 (in parent's coordinate frame)
+        parent_inv = parent_obj.matrix_world.inverted()
+        joint_relative = parent_inv @ obj.matrix_world
+        origin = matrix_to_transform(joint_relative)
+    else:
+        # No parent found, use absolute world transform
+        origin = matrix_to_transform(obj.matrix_world)
 
     # Joint limits
     limits = None
@@ -431,7 +470,7 @@ def scene_to_robot(context, meshes_dir: Path | None = None) -> Robot:
     # Collect all joints
     for obj in scene.objects:
         if obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint:
-            joint = blender_joint_to_core(obj)
+            joint = blender_joint_to_core(obj, scene)
             if joint:
                 try:
                     robot.add_joint(joint)
