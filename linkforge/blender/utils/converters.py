@@ -6,6 +6,7 @@ and LinkForge's core data models.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 try:
@@ -518,7 +519,9 @@ def scene_to_robot(context, meshes_dir: Path | None = None) -> Robot:
                     parent_frame = link_frames[parent_name]
                     parent_frame_inv = parent_frame.inverted()
                     joint_relative = parent_frame_inv @ obj.matrix_world
-                    joint.origin = matrix_to_transform(joint_relative)
+                    corrected_origin = matrix_to_transform(joint_relative)
+                    # Create new joint with corrected origin (Joint is frozen dataclass)
+                    joint = replace(joint, origin=corrected_origin)
 
                 try:
                     robot.add_joint(joint)
