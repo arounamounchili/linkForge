@@ -266,6 +266,10 @@ def blender_link_to_core(
     if robot_props and hasattr(robot_props, "mesh_format"):
         mesh_format = robot_props.mesh_format
 
+    # Use object's world transform for visual/collision origin
+    # This ensures objects appear where user positioned them in Blender
+    visual_origin = matrix_to_transform(obj.matrix_world)
+
     # Visual geometry
     visual = None
     if props.use_visual_geometry:
@@ -282,7 +286,7 @@ def blender_link_to_core(
         if visual_geom:
             visual = Visual(
                 geometry=visual_geom,
-                origin=Transform.identity(),
+                origin=visual_origin,
                 material=material,
             )
 
@@ -300,7 +304,7 @@ def blender_link_to_core(
             decimation_ratio=props.collision_decimation_ratio,
         )
         if collision_geom:
-            collision = Collision(geometry=collision_geom, origin=Transform.identity())
+            collision = Collision(geometry=collision_geom, origin=visual_origin)
 
     # Inertial properties
     inertial = None
@@ -329,7 +333,7 @@ def blender_link_to_core(
 
         inertial = Inertial(
             mass=props.mass,
-            origin=Transform.identity(),
+            origin=visual_origin,
             inertia=inertia_tensor,
         )
 
