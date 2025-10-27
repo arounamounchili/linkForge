@@ -234,8 +234,9 @@ def get_object_material(obj, props) -> Material | None:
     return Material(name=mat_name, color=color)
 
 
-def blender_link_to_core(
+def blender_link_to_core_with_origin(
     obj,
+    visual_origin: Transform,
     meshes_dir: Path | None = None,
     robot_props=None,
 ) -> Link | None:
@@ -243,6 +244,7 @@ def blender_link_to_core(
 
     Args:
         obj: Blender Object with linkforge property group
+        visual_origin: Pre-calculated visual/collision origin transform
         meshes_dir: Optional directory for exporting mesh files
         robot_props: Robot property group with export settings
 
@@ -265,10 +267,6 @@ def blender_link_to_core(
     mesh_format = "STL"
     if robot_props and hasattr(robot_props, "mesh_format"):
         mesh_format = robot_props.mesh_format
-
-    # Use object's world transform for visual/collision origin
-    # This ensures objects appear where user positioned them in Blender
-    visual_origin = matrix_to_transform(obj.matrix_world)
 
     # Visual geometry
     visual = None
@@ -461,17 +459,41 @@ def scene_to_robot(context, meshes_dir: Path | None = None) -> Robot:
 
     robot = Robot(name=robot_name)
 
-    # Collect all links
+    # First pass: Build map of joint Empty positions for each child link
+    # This tells us where each link frame will be
+    link_frame_positions = {}  # link_name -> joint Empty matrix_world
+    for obj in scene.objects:
+        if obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint:
+            props = obj.linkforge_joint
+            child_link_name = props.child_link if props.child_link != "NONE" else ""
+            if child_link_name:
+                link_frame_positions[child_link_name] = obj.matrix_world.copy()
+
+    # Second pass: Collect all links with correct visual origins
     for obj in scene.objects:
         if obj.linkforge.is_robot_link:
-            link = blender_link_to_core(obj, meshes_dir, robot_props)
+            link_name = obj.linkforge.link_name if obj.linkforge.link_name else obj.name
+
+            # Calculate visual origin relative to link frame
+            if link_name in link_frame_positions and Matrix:
+                # Child link: calculate visual origin relative to joint Empty position
+                link_frame = link_frame_positions[link_name]
+                link_frame_inv = link_frame.inverted()
+                obj_relative = link_frame_inv @ obj.matrix_world
+                visual_origin = matrix_to_transform(obj_relative)
+            else:
+                # Root link: use object's world transform as visual origin
+                visual_origin = matrix_to_transform(obj.matrix_world)
+
+            # Create link with calculated visual origin
+            link = blender_link_to_core_with_origin(obj, visual_origin, meshes_dir, robot_props)
             if link:
                 try:
                     robot.add_link(link)
                 except ValueError as e:
                     print(f"Warning: Could not add link {link.name}: {e}")
 
-    # Collect all joints
+    # Third pass: Collect all joints
     for obj in scene.objects:
         if obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint:
             joint = blender_joint_to_core(obj, scene)
