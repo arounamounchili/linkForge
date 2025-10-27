@@ -75,16 +75,16 @@ class LINKFORGE_OT_export_urdf(Operator, ExportHelper):
         # Generate URDF/XACRO
         try:
             if robot_props.export_format == "URDF":
-                generator = URDFGenerator(pretty_print=True, urdf_path=output_path)
-                generator.write(robot, output_path)
+                urdf_generator = URDFGenerator(pretty_print=True, urdf_path=output_path)
+                urdf_generator.write(robot, output_path)
                 msg = f"✓ Exported URDF to {output_path}"
                 if meshes_dir:
                     msg += f" (meshes in {meshes_dir})"
                 self.report({"INFO"}, msg)
                 print(msg)  # Also print to console
             else:  # XACRO
-                generator = XACROGenerator(pretty_print=True)
-                generator.write(robot, output_path)
+                xacro_generator = XACROGenerator(pretty_print=True)
+                xacro_generator.write(robot, output_path)
                 msg = f"✓ Exported XACRO to {output_path}"
                 if meshes_dir:
                     msg += f" (meshes in {meshes_dir})"
