@@ -19,7 +19,7 @@ class LINKFORGE_OT_create_joint(Operator):
     """Create a new robot joint at 3D cursor"""
 
     bl_idname = "linkforge.create_joint"
-    bl_label = "Create Joint"
+    bl_label = "Create Joint at Cursor"
     bl_description = "Create a new robot joint (Empty) at the 3D cursor location"
     bl_options = {"REGISTER", "UNDO"}
 
@@ -53,12 +53,56 @@ class LINKFORGE_OT_create_joint(Operator):
         return {"FINISHED"}
 
 
+class LINKFORGE_OT_create_joint_at_selection(Operator):
+    """Create a new robot joint at selected link's location"""
+
+    bl_idname = "linkforge.create_joint_at_selection"
+    bl_label = "Create Joint at Link"
+    bl_description = "Create a new robot joint at the selected link's location and orientation"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        """Check if operator can run."""
+        obj = context.active_object
+        return obj is not None and obj.linkforge.is_robot_link
+
+    def execute(self, context):
+        """Execute the operator."""
+        obj = context.active_object
+
+        # Get object's world location and rotation
+        location = obj.matrix_world.translation.copy()
+        rotation = obj.matrix_world.to_euler()
+
+        # Create Empty at object's location
+        bpy.ops.object.empty_add(type="ARROWS", location=location)
+        joint_empty = context.active_object
+        joint_empty.name = f"{obj.linkforge.link_name}_joint"
+        joint_empty.rotation_euler = rotation
+
+        # Enable joint properties
+        joint_empty.linkforge_joint.is_robot_joint = True
+        joint_empty.linkforge_joint.joint_name = sanitize_urdf_name(joint_empty.name)
+
+        # Set default joint type
+        joint_empty.linkforge_joint.joint_type = "REVOLUTE"
+
+        # Auto-set parent link to selected object
+        joint_empty.linkforge_joint.parent_link = obj.linkforge.link_name
+
+        self.report(
+            {"INFO"}, f"Created joint '{joint_empty.name}' at link '{obj.linkforge.link_name}'"
+        )
+        return {"FINISHED"}
+
+
 class LINKFORGE_OT_remove_joint(Operator):
-    """Remove robot joint marking from selected Empty (keeps the Empty)"""
+    """Delete the selected joint Empty"""
 
     bl_idname = "linkforge.remove_joint"
-    bl_label = "Remove Joint Marking"
-    bl_description = "Remove robot joint marking (Empty will not be deleted)"
+    bl_label = "Delete Joint"
+    bl_description = "Delete the selected joint Empty from the scene"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -70,11 +114,12 @@ class LINKFORGE_OT_remove_joint(Operator):
     def execute(self, context):
         """Execute the operator."""
         obj = context.active_object
+        joint_name = obj.name
 
-        # Disable joint properties (Empty is not deleted)
-        obj.linkforge_joint.is_robot_joint = False
+        # Delete the Empty entirely
+        bpy.data.objects.remove(obj, do_unlink=True)
 
-        self.report({"INFO"}, f"Removed joint marking from '{obj.name}' (Empty kept)")
+        self.report({"INFO"}, f"Deleted joint '{joint_name}'")
         return {"FINISHED"}
 
 
@@ -140,6 +185,7 @@ class LINKFORGE_OT_auto_detect_parent_child(Operator):
 # Registration
 classes = [
     LINKFORGE_OT_create_joint,
+    LINKFORGE_OT_create_joint_at_selection,
     LINKFORGE_OT_remove_joint,
     LINKFORGE_OT_auto_detect_parent_child,
 ]

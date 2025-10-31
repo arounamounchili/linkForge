@@ -20,6 +20,7 @@ class LINKFORGE_PT_validation_panel(Panel):
     bl_region_type = "UI"
     bl_category = "LinkForge"
     bl_order = 5
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         """Draw the panel."""

@@ -1,236 +1,167 @@
 # LinkForge Examples
 
-This directory contains example URDF files demonstrating different robot types and features.
+Simple, functional URDF examples for robotics.
 
 ## Examples
 
-### 1. simple_arm.urdf
+### 1. mobile_robot.urdf
 
-**Type:** 2-DOF Robot Arm
+**Type:** 4-Wheel Drive Mobile Robot with LiDAR
 
-**Features Demonstrated:**
-- Revolute joints with limits
-- Multiple links in series
-- Different geometry types (cylinder, box)
-- Material colors (gray, blue, orange)
-- Proper inertial properties
-- Joint dynamics (damping, friction)
+**Description:**
+Basic mobile robot platform with four driven wheels and top-mounted LiDAR sensor. Simple and functional design for navigation and SLAM applications.
+
+**Components:**
+- Base platform (400mm × 300mm × 120mm)
+- 4× driven wheels (continuous rotation)
+- LiDAR sensor (fixed mount)
 
 **Structure:**
-```
-base_link (cylinder)
-└─ joint1 (revolute, Z-axis, ±180°)
-   └─ link1 (box)
-      └─ joint2 (revolute, Y-axis, ±90°)
-         └─ link2 (box)
-```
+- 6 links total (base + 4 wheels + lidar)
+- 5 joints (4 continuous wheel joints + 1 fixed lidar mount)
 
-**Use Case:** Simple vertical robot arm, good for learning joint configuration
+**Use Cases:**
+- ROS2 Navigation
+- SLAM mapping
+- Autonomous navigation
+- Mobile robotics education
 
 ---
 
-### 2. simple_gripper.urdf
+### 2. robot_arm.urdf
 
-**Type:** Parallel Jaw Gripper
+**Type:** 4-DOF Robot Arm
 
-**Features Demonstrated:**
-- Prismatic (linear) joints
-- Mimic constraint (right finger follows left)
-- Symmetric structure
-- Small-scale precision parts
+**Description:**
+Simple serial manipulator with 4 revolute joints. Clean design without unnecessary complexity, suitable for pick-and-place and basic manipulation tasks.
+
+**Components:**
+- Fixed base (cylinder)
+- Shoulder link (vertical box)
+- Upper arm link (box)
+- Forearm link (box)
+- Wrist link (end effector mount)
 
 **Structure:**
-```
-palm (box)
-├─ left_finger_joint (prismatic, X-axis, 0-30mm)
-│  └─ left_finger (box)
-└─ right_finger_joint (prismatic, -X-axis, 0-30mm, mimics left)
-   └─ right_finger (box)
-```
+- 5 links total
+- 4 revolute joints (properly positioned at link endpoints)
 
-**Use Case:** End-effector for robot arms, demonstrates prismatic joints and mimic
+**Joint Configuration:**
+1. base_to_shoulder (Z-axis rotation): ±180°
+2. shoulder_to_upper_arm (Y-axis pitch): ±90°
+3. upper_arm_to_forearm (Y-axis pitch): ±135°
+4. forearm_to_wrist (Z-axis roll): ±180°
+
+**Use Cases:**
+- Pick-and-place operations
+- Basic manipulation
+- Robot arm education
+- MoveIt! motion planning
 
 ---
 
-### 3. mobile_base.urdf
-
-**Type:** Differential Drive Mobile Robot
-
-**Features Demonstrated:**
-- Continuous rotation joints (wheels)
-- Fixed joints (casters)
-- Spherical geometry (caster balls)
-- Multiple wheels with symmetry
-- Realistic mobile robot kinematics
-
-**Structure:**
-```
-base_link (box)
-├─ left_wheel_joint (continuous, Y-axis)
-│  └─ left_wheel (cylinder)
-├─ right_wheel_joint (continuous, Y-axis)
-│  └─ right_wheel (cylinder)
-├─ front_caster_joint (fixed)
-│  └─ front_caster (sphere)
-└─ rear_caster_joint (fixed)
-   └─ rear_caster (sphere)
-```
-
-**Use Case:** Mobile robot base, demonstrates continuous and fixed joints
-
----
-
-## How to Use Examples
+## Quick Start
 
 ### Import into Blender
 
 1. Open Blender 4.2+
 2. Press `N` → **LinkForge** tab
-3. Go to **Import** panel
-4. Click **"Import URDF/XACRO"**
-5. Select an example URDF file
-6. Robot appears in viewport
+3. Click **"Import URDF/XACRO"**
+4. Select example file
+5. Robot appears in viewport
 
-### Test in RViz
+### Visualize in RViz2
 
 ```bash
+# Publish robot description
+ros2 run robot_state_publisher robot_state_publisher \
+  --ros-args -p robot_description:="$(cat mobile_robot.urdf)"
+
 # Launch RViz
 ros2 run rviz2 rviz2
-
-# In another terminal, publish the URDF
-ros2 run robot_state_publisher robot_state_publisher \
-  --ros-args -p robot_description:="$(cat simple_arm.urdf)"
 
 # In RViz:
 # - Add → RobotModel
 # - Set Fixed Frame: base_link
-# - Adjust Joint State Publisher to move joints
 ```
 
-### Modify and Export
+### Test in Gazebo
 
-1. Import example URDF into Blender
-2. Select any link or joint
-3. Modify properties in LinkForge panels:
-   - Change masses
-   - Adjust joint limits
-   - Modify colors
-   - Add/remove links
-4. Export back to URDF
-5. Test changes in RViz/Gazebo
+```bash
+gazebo --verbose
+ros2 run gazebo_ros spawn_entity.py \
+  -entity my_robot \
+  -file mobile_robot.urdf
+```
 
 ---
 
-## Learning Path
+## Modification Tips
 
-**Beginner:**
-1. Start with `simple_arm.urdf`
-   - Learn link/joint structure
-   - Understand revolute joints
-   - Practice modifying properties
+### Mobile Robot
+- **Change wheel size**: Modify cylinder radius for different terrains
+- **Add sensors**: Attach camera, IMU, or ultrasonic sensors to base_link
+- **Convert to differential drive**: Remove 2 wheels, keep front pair only
 
-**Intermediate:**
-2. Explore `simple_gripper.urdf`
-   - Learn prismatic joints
-   - Understand mimic constraints
-   - See symmetrical designs
-
-**Advanced:**
-3. Study `mobile_base.urdf`
-   - Continuous joints for wheels
-   - Fixed joints for attachments
-   - Complex multi-link robots
-
----
-
-## Creating Your Own
-
-Use these examples as templates:
-
-### Robot Arm Template
-- Base: `simple_arm.urdf`
-- Modify: Add more links/joints
-- Use for: Manipulators, legs
-
-### Gripper Template
-- Base: `simple_gripper.urdf`
-- Modify: Finger count, jaw type
-- Use for: End-effectors, hands
-
-### Mobile Base Template
-- Base: `mobile_base.urdf`
-- Modify: Wheel count, shape
-- Use for: Ground vehicles, platforms
-
----
-
-## Technical Details
-
-### Joint Type Reference
-
-| Type | Movement | Limits | Example Use |
-|------|----------|--------|-------------|
-| `revolute` | Rotation | Yes (min/max angle) | Elbows, knees |
-| `continuous` | Rotation | No | Wheels, turrets |
-| `prismatic` | Linear | Yes (min/max distance) | Sliders, lifts |
-| `fixed` | None | N/A | Sensors, mounts |
-| `floating` | 6-DOF | N/A | Floating bases |
-| `planar` | 2D plane | N/A | Planar mechanisms |
-
-### Geometry Types
-
-- **Box**: `<box size="x y z"/>`
-- **Cylinder**: `<cylinder radius="r" length="l"/>`
-- **Sphere**: `<sphere radius="r"/>`
-- **Capsule**: `<capsule radius="r" length="l"/>`
-- **Mesh**: `<mesh filename="path/to/mesh.obj"/>`
-
-### Coordinate System
-
-- **X-axis (Red)**: Forward
-- **Y-axis (Green)**: Left
-- **Z-axis (Blue)**: Up
-
-All examples use ROS conventions (Z-up, X-forward).
+### Robot Arm
+- **Add more joints**: Duplicate link/joint pattern for 6-DOF or 7-DOF arm
+- **Change dimensions**: Modify box dimensions for different workspace/reach
+- **Add gripper**: Attach end-effector to wrist_link
+- **Change geometry**: Replace boxes with cylinders for industrial look
 
 ---
 
 ## Validation
 
-All examples pass LinkForge validation:
-- ✓ Valid kinematic tree structure
-- ✓ No duplicate names
-- ✓ Proper parent-child relationships
-- ✓ Realistic inertial properties
-- ✓ Valid joint limits
+Test with LinkForge:
 
-Test with:
 ```python
 from linkforge.core.parsers.urdf_parser import parse_urdf
 
-robot = parse_urdf("simple_arm.urdf")
-errors = robot.validate_tree_structure()
-print(f"Validation: {'PASS' if not errors else 'FAIL'}")
+robot = parse_urdf("mobile_robot.urdf")
+print(f"Robot: {robot.name}")
+print(f"Links: {len(robot.links)}")
+print(f"Joints: {len(robot.joints)}")
+```
+
+All examples include:
+- Valid URDF syntax
+- Proper inertial properties
+- Realistic dimensions
+- Correct joint limits
+
+---
+
+## ROS2 Integration
+
+### Navigation (Mobile Robot)
+
+```bash
+# Launch Nav2
+ros2 launch nav2_bringup navigation_launch.py
+
+# Send goal
+ros2 topic pub /goal_pose geometry_msgs/PoseStamped ...
+```
+
+### MoveIt! (Robot Arm)
+
+```bash
+# Setup MoveIt config
+ros2 run moveit_setup_assistant moveit_setup_assistant
+
+# Launch MoveIt
+ros2 launch <robot>_moveit_config demo.launch.py
 ```
 
 ---
 
-## Contributing Examples
+## License
 
-Want to contribute an example? Please:
-1. Create a well-structured URDF
-2. Include proper comments
-3. Use realistic masses/inertias
-4. Test in RViz
-5. Submit PR with description
+GPL-3.0-or-later (same as LinkForge)
 
-Example types we'd love to see:
-- Humanoid robot
-- Quadruped (4-legged)
-- Robotic hand
-- Industrial manipulator
-- Flying drone
+Free for research, education, and commercial use.
 
 ---
 
-**Questions?** Open an issue on [GitHub](https://github.com/arounamounchili/linkforge/issues)
+**Questions?** https://github.com/arounamounchili/linkforge/issues

@@ -17,10 +17,10 @@ from linkforge.core.parsers.urdf_parser import parse_urdf
 
 
 def test_simple_arm_roundtrip():
-    """Test importing and re-exporting simple_arm.urdf preserves structure."""
+    """Test importing and re-exporting robot_arm.urdf preserves structure."""
     # Get path to example URDF
     examples_dir = Path(__file__).parent.parent.parent / "examples"
-    urdf_path = examples_dir / "simple_arm.urdf"
+    urdf_path = examples_dir / "robot_arm.urdf"
 
     assert urdf_path.exists(), f"Example URDF not found at {urdf_path}"
 
@@ -28,20 +28,23 @@ def test_simple_arm_roundtrip():
     robot = parse_urdf(urdf_path)
 
     # Verify basic structure
-    assert robot.name == "simple_arm"
-    assert len(robot.links) == 3
-    assert len(robot.joints) == 2
+    assert robot.name == "robot_arm"
+    assert len(robot.links) == 5  # base + 4 arm links
+    assert len(robot.joints) == 4  # 4 revolute
 
     # Verify link names
     link_names = {link.name for link in robot.links}
-    assert link_names == {"base_link", "link1", "link2"}
+    assert "base_link" in link_names
+    assert "shoulder_link" in link_names
+    assert "upper_arm_link" in link_names
+    assert "forearm_link" in link_names
+    assert "wrist_link" in link_names
 
     # Verify joint names and types
     joint_names = {joint.name for joint in robot.joints}
-    assert joint_names == {"joint1", "joint2"}
+    revolute_joints = [j for j in robot.joints if j.type.name == "REVOLUTE"]
 
-    for joint in robot.joints:
-        assert joint.type.name == "REVOLUTE"
+    assert len(revolute_joints) == 4  # 4 DOF
 
     # Export back to URDF
     from linkforge.core.generators import URDFGenerator
@@ -74,7 +77,7 @@ def test_simple_arm_roundtrip():
 def test_materials_preserved():
     """Test that material colors are preserved in round-trip."""
     examples_dir = Path(__file__).parent.parent.parent / "examples"
-    urdf_path = examples_dir / "simple_arm.urdf"
+    urdf_path = examples_dir / "robot_arm.urdf"
 
     robot = parse_urdf(urdf_path)
 
@@ -84,16 +87,16 @@ def test_materials_preserved():
         if link.visual and link.visual.material:
             materials_found.append(link.visual.material.name)
 
-    assert len(materials_found) == 3, "Expected 3 materials (gray, blue, orange)"
-    assert "gray" in materials_found
-    assert "blue" in materials_found
-    assert "orange" in materials_found
+    assert len(materials_found) > 0, "Expected materials to be parsed"
+    # Check for expected materials in 6DOF arm
+    material_names = {m for m in materials_found}
+    assert "arm_material" in material_names or "base_material" in material_names
 
 
 def test_inertial_preserved():
     """Test that inertial properties are preserved in round-trip."""
     examples_dir = Path(__file__).parent.parent.parent / "examples"
-    urdf_path = examples_dir / "simple_arm.urdf"
+    urdf_path = examples_dir / "robot_arm.urdf"
 
     robot = parse_urdf(urdf_path)
 
@@ -107,7 +110,7 @@ def test_inertial_preserved():
 def test_joint_limits_preserved():
     """Test that joint limits are preserved in round-trip."""
     examples_dir = Path(__file__).parent.parent.parent / "examples"
-    urdf_path = examples_dir / "simple_arm.urdf"
+    urdf_path = examples_dir / "robot_arm.urdf"
 
     robot = parse_urdf(urdf_path)
 

@@ -43,8 +43,6 @@ def register() -> None:
     # Register Blender components
     blender.register()
 
-    print("LinkForge: Extension registered successfully")
-
 
 def unregister() -> None:
     """Unregister the extension from Blender.
@@ -58,8 +56,6 @@ def unregister() -> None:
 
     # Unregister Blender components
     blender.unregister()
-
-    print("LinkForge: Extension unregistered")
 
 
 # Entry point for Blender Extension system

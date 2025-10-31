@@ -26,7 +26,7 @@ class LINKFORGE_PT_link_panel(Panel):
         layout = self.layout
         obj = context.active_object
 
-        if obj is None:
+        if obj is None or not obj.select_get():
             layout.label(text="No object selected", icon="INFO")
             return
 

@@ -26,11 +26,15 @@ class LINKFORGE_PT_joint_panel(Panel):
         layout = self.layout
         obj = context.active_object
 
-        # Create Joint button (always visible)
+        # Create Joint buttons (always visible)
         box = layout.box()
         box.operator("linkforge.create_joint", icon="ADD")
 
-        if obj is None or obj.type != "EMPTY":
+        # Show "Create at Link" button if a link is selected
+        if obj and obj.select_get() and obj.linkforge.is_robot_link:
+            box.operator("linkforge.create_joint_at_selection", icon="PIVOT_BOUNDBOX")
+
+        if obj is None or not obj.select_get() or obj.type != "EMPTY":
             box.label(text="Select an Empty to edit joint", icon="INFO")
             return
 
@@ -54,7 +58,6 @@ class LINKFORGE_PT_joint_panel(Panel):
         box.label(text="Connection:", icon="LINKED")
         box.prop(props, "parent_link", icon="TRIA_UP")
         box.prop(props, "child_link", icon="TRIA_DOWN")
-        box.operator("linkforge.auto_detect_parent_child", text="Auto-Detect", icon="AUTO")
 
         # Joint axis
         if props.joint_type in {"REVOLUTE", "CONTINUOUS", "PRISMATIC"}:

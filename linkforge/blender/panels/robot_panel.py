@@ -94,6 +94,7 @@ class LINKFORGE_PT_import_panel(Panel):
     bl_region_type = "UI"
     bl_category = "LinkForge"
     bl_order = 0
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         """Draw the panel."""
@@ -120,6 +121,7 @@ class LINKFORGE_PT_robot_panel(Panel):
     bl_region_type = "UI"
     bl_category = "LinkForge"
     bl_order = 3
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         """Draw the panel."""
@@ -127,16 +129,23 @@ class LINKFORGE_PT_robot_panel(Panel):
         scene = context.scene
         props = scene.linkforge
 
-        # Robot identification
-        box = layout.box()
-        box.label(text="Robot Properties:", icon="ARMATURE_DATA")
-        box.prop(props, "robot_name")
-
-        # Count links and joints
+        # Count links and joints first
         num_links = sum(1 for obj in scene.objects if obj.linkforge.is_robot_link)
         num_joints = sum(
             1 for obj in scene.objects if obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint
         )
+
+        # Only show robot properties if there are links in the scene
+        if num_links == 0:
+            box = layout.box()
+            box.label(text="No robot in scene", icon="INFO")
+            box.label(text="Mark objects as links to start", icon="OBJECT_DATA")
+            return
+
+        # Robot identification
+        box = layout.box()
+        box.label(text="Robot Properties:", icon="ARMATURE_DATA")
+        box.prop(props, "robot_name")
 
         # Build tree structure to find root
         tree, root_link = build_tree_structure(scene)
@@ -181,6 +190,7 @@ class LINKFORGE_PT_export_panel(Panel):
     bl_region_type = "UI"
     bl_category = "LinkForge"
     bl_order = 4
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
         """Draw the panel."""

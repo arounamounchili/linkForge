@@ -176,26 +176,15 @@ def create_link_object(link: Link, urdf_dir: Path, collection=None) -> object | 
         collection: Blender Collection to add object to
 
     Returns:
-        Blender Object or None (returns the link Empty, not the visual mesh)
+        Blender Object or None (returns the visual mesh object with link properties)
     """
     if bpy is None:
         return None
 
-    # Create an Empty to represent the link frame (at link origin)
-    bpy.ops.object.empty_add(type="SPHERE", location=(0, 0, 0))
-    link_empty = bpy.context.active_object
-    link_empty.name = link.name
-    link_empty.empty_display_size = 0.02  # Small, subtle marker
+    # Will store the main link object (visual mesh or empty if no visual)
+    link_obj = None
 
-    # Set link properties on the Empty
-    if hasattr(link_empty, "linkforge"):
-        props = link_empty.linkforge
-        props.is_robot_link = True
-        props.link_name = link.name
-        if link.inertial:
-            props.mass = link.inertial.mass
-
-    # If link has visual geometry, create it as a child of the link Empty
+    # If link has visual geometry, create it
     if link.visual:
         visual = link.visual
         visual_obj = None
@@ -208,7 +197,7 @@ def create_link_object(link: Link, urdf_dir: Path, collection=None) -> object | 
                 # Try as absolute path
                 mesh_path = visual.geometry.filepath
 
-            visual_obj = import_mesh_file(mesh_path, f"{link.name}_visual")
+            visual_obj = import_mesh_file(mesh_path, link.name)
 
             # Apply scale from URDF
             if visual_obj and visual.geometry.scale:
@@ -216,7 +205,7 @@ def create_link_object(link: Link, urdf_dir: Path, collection=None) -> object | 
                 visual_obj.scale = (scale.x, scale.y, scale.z)
         else:
             # Create primitive geometry
-            visual_obj = create_primitive_mesh(visual.geometry, f"{link.name}_visual")
+            visual_obj = create_primitive_mesh(visual.geometry, link.name)
 
         if visual_obj:
             # Apply visual origin transform (offset from link frame)
@@ -227,10 +216,6 @@ def create_link_object(link: Link, urdf_dir: Path, collection=None) -> object | 
             else:
                 visual_obj.location = (0, 0, 0)
                 visual_obj.rotation_euler = (0, 0, 0)
-
-            # Parent the visual mesh to the link Empty
-            visual_obj.parent = link_empty
-            visual_obj.matrix_parent_inverse = link_empty.matrix_world.inverted()
 
             # Add visual mesh to collection
             if collection:
@@ -249,12 +234,33 @@ def create_link_object(link: Link, urdf_dir: Path, collection=None) -> object | 
                     visual_obj.data.materials.clear()
                     visual_obj.data.materials.append(mat)
 
-    # Set additional link properties on the Empty
-    if hasattr(link_empty, "linkforge"):
-        props = link_empty.linkforge
+            # This visual object IS the link object
+            link_obj = visual_obj
+
+    else:
+        # No visual geometry - create an Empty to represent the link
+        bpy.ops.object.empty_add(type="SPHERE", location=(0, 0, 0))
+        link_obj = bpy.context.active_object
+        link_obj.name = link.name
+        link_obj.empty_display_size = 0.05
+
+        # Add to collection
+        if collection:
+            for coll in list(link_obj.users_collection):
+                if coll != collection:
+                    coll.objects.unlink(link_obj)
+            if link_obj not in collection.objects[:]:
+                collection.objects.link(link_obj)
+
+    # Set link properties on the main link object (visual mesh or empty)
+    if link_obj and hasattr(link_obj, "linkforge"):
+        props = link_obj.linkforge
+        props.is_robot_link = True
+        props.link_name = link.name
 
         # Set mass and inertia
         if link.inertial:
+            props.mass = link.inertial.mass
             if link.inertial.inertia:
                 inertia = link.inertial.inertia
                 props.inertia_ixx = inertia.ixx
@@ -297,22 +303,7 @@ def create_link_object(link: Link, urdf_dir: Path, collection=None) -> object | 
             if link.visual:
                 props.collision_geometry_type = props.visual_geometry_type
 
-    # Add link Empty to collection
-    if collection:
-        # Remove from all other collections first
-        for coll in list(link_empty.users_collection):
-            if coll != collection:
-                coll.objects.unlink(link_empty)
-
-        # Link to target collection if not already there
-        if link_empty not in collection.objects[:]:
-            collection.objects.link(link_empty)
-
-    # Hide link empties - they're structural, not for visualization
-    link_empty.hide_viewport = True
-    link_empty.hide_render = True
-
-    return link_empty
+    return link_obj
 
 
 def create_joint_object(joint: Joint, link_objects: dict, collection=None) -> object | None:
@@ -358,9 +349,19 @@ def create_joint_object(joint: Joint, link_objects: dict, collection=None) -> ob
 
         # Set axis
         if joint.axis:
-            props.axis_x = joint.axis.x
-            props.axis_y = joint.axis.y
-            props.axis_z = joint.axis.z
+            # Check if it's a standard axis (X, Y, or Z)
+            if joint.axis.x == 1.0 and joint.axis.y == 0.0 and joint.axis.z == 0.0:
+                props.axis = "X"
+            elif joint.axis.x == 0.0 and joint.axis.y == 1.0 and joint.axis.z == 0.0:
+                props.axis = "Y"
+            elif joint.axis.x == 0.0 and joint.axis.y == 0.0 and joint.axis.z == 1.0:
+                props.axis = "Z"
+            else:
+                # Custom axis
+                props.axis = "CUSTOM"
+                props.custom_axis_x = joint.axis.x
+                props.custom_axis_y = joint.axis.y
+                props.custom_axis_z = joint.axis.z
 
         # Set limits
         if joint.limits:
@@ -372,8 +373,9 @@ def create_joint_object(joint: Joint, link_objects: dict, collection=None) -> ob
 
         # Set dynamics
         if joint.dynamics:
-            props.damping = joint.dynamics.damping
-            props.friction = joint.dynamics.friction
+            props.use_dynamics = True
+            props.dynamics_damping = joint.dynamics.damping
+            props.dynamics_friction = joint.dynamics.friction
 
         # Set mimic
         if joint.mimic:
@@ -398,11 +400,17 @@ def create_joint_object(joint: Joint, link_objects: dict, collection=None) -> ob
             empty.rotation_euler = (origin.rpy.x, origin.rpy.y, origin.rpy.z)
 
         # Parent the child link to the joint Empty
-        # Child should be at (0,0,0) relative to joint
+        # Child link should maintain its visual origin transform
+        # Store the current transform before parenting
+        current_loc = child_obj.location.copy()
+        current_rot = child_obj.rotation_euler.copy()
+
         child_obj.parent = empty
         child_obj.matrix_parent_inverse = empty.matrix_world.inverted()
-        child_obj.location = (0, 0, 0)
-        child_obj.rotation_euler = (0, 0, 0)
+
+        # Restore the visual origin transform (don't reset to 0!)
+        child_obj.location = current_loc
+        child_obj.rotation_euler = current_rot
 
     # Add to collection
     if collection:
