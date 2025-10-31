@@ -29,11 +29,17 @@ env/
 
 # Testing
 .pytest_cache/
+pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 coverage.xml
 *.cover
 .hypothesis/
+.tox/
+nosetests.xml
+*.mo
+*.pot
 
 # Type checking
 .mypy_cache/
@@ -49,8 +55,20 @@ dmypy.json
 *.swp
 *.swo
 *~
-.DS_Store
 .claude/
+CLAUDE.md
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
 # Blender
 *.blend1
@@ -59,6 +77,9 @@ dmypy.json
 # Build artifacts
 *.pyc
 *.pyo
+*.pyd
+*.dll
+*.dylib
 
 # Logs
 *.log
@@ -66,6 +87,14 @@ dmypy.json
 # Temporary files
 tmp/
 temp/
+*.tmp
+*.bak
+*.orig
 
 # Planning documents (for reference only, not versioned)
 .planning/
+
+# Documentation builds
+docs/_build/
+docs/.buildinfo
+site/
