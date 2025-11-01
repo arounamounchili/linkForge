@@ -39,9 +39,6 @@ class LINKFORGE_PT_joint_panel(Panel):
             row.prop(prefs, "joint_axis_length", text="Length", slider=True)
             row.enabled = prefs.show_joint_axes
 
-        # Fix button for old joints
-        vis_box.operator("linkforge.fix_all_joint_displays", text="Fix Old Joints", icon="OUTLINER_OB_EMPTY")
-
         # Create Joint buttons (always visible)
         box = layout.box()
         box.operator("linkforge.create_joint", icon="ADD")

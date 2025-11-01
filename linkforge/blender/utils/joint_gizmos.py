@@ -242,12 +242,31 @@ def draw_joint_axes():
     gpu.state.depth_test_set("NONE")
 
 
+def fix_existing_joints():
+    """Fix display type for existing joints in all scenes."""
+    if bpy is None:
+        return
+
+    for scene in bpy.data.scenes:
+        for obj in scene.objects:
+            if (
+                obj.type == "EMPTY"
+                and hasattr(obj, "linkforge_joint")
+                and obj.linkforge_joint.is_robot_joint
+                and obj.empty_display_type != "PLAIN_AXES"
+            ):
+                obj.empty_display_type = "PLAIN_AXES"
+
+
 def register():
     """Register the draw handler for joint axes visualization."""
     global _draw_handle
 
     if bpy is None:
         return
+
+    # Fix existing joints automatically
+    fix_existing_joints()
 
     # Add draw handler
     if _draw_handle is None:
