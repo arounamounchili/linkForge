@@ -5,6 +5,36 @@ All notable changes to LinkForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - Unreleased
+
+### Status: In Development
+
+**Goal:** Quality & Stability release for Blender Extensions Platform submission
+
+### Planned Features
+
+#### Added
+- **RViz-Style Joint Axis Visualization**: RGB colored axes (Red=X, Green=Y, Blue=Z)
+- **Accurate Mesh Inertia Calculation**: Replace bounding box approximation
+- **Blender Layer Tests**: 60%+ coverage on integration layer
+- **Cross-Platform Support**: Verified on Windows, Linux, macOS
+- **Professional Documentation**: User guide, video tutorials, API docs
+
+#### Changed
+- Improved UI tooltips and error messages
+- Enhanced example robots with better documentation
+
+#### Fixed
+- Platform-specific path handling issues
+- Mesh inertia warnings removed
+
+### Technical Details
+- **Target test coverage**: 210+ tests, 65%+ overall coverage
+- **Platform testing**: GitHub Actions CI for Windows/Linux/macOS
+- **Code quality**: Ruff + mypy compliance maintained
+
+---
+
 ## [0.3.0] - 2025-11-01
 
 ### Added
