@@ -39,9 +39,7 @@ def update_joint_axis_length(self, context):
 class LinkForgePreferences(AddonPreferences):
     """User preferences for LinkForge extension."""
 
-    # Use __package__ to get the correct addon name
-    # When installed as extension, Blender uses the package name
-    bl_idname = __package__.split(".")[0] if "." in __package__ else __package__
+    bl_idname = "linkforge"
 
     # Joint axis visualization
     show_joint_axes: BoolProperty(  # type: ignore

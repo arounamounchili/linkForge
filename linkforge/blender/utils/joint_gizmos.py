@@ -199,26 +199,21 @@ def draw_joint_axes():
     context = bpy.context
     scene = context.scene
 
-    # Get preferences - try multiple addon names for compatibility
-    show_axes = True  # Default
-    axis_length = 0.2  # Default
+    # Get preferences
+    show_axes = True
+    axis_length = 0.2
 
-    # Try to get addon preferences (works for both dev and installed)
-    addon_names = ["linkforge", __package__.split(".")[0] if "." in __package__ else "linkforge"]
-    for addon_name in addon_names:
-        try:
-            addon_prefs = context.preferences.addons.get(addon_name)
-            if addon_prefs and hasattr(addon_prefs, "preferences"):
-                prefs = addon_prefs.preferences
-                if hasattr(prefs, "show_joint_axes"):
-                    show_axes = prefs.show_joint_axes
-                if hasattr(prefs, "joint_axis_length"):
-                    axis_length = prefs.joint_axis_length
-                break  # Found preferences, stop searching
-        except (AttributeError, KeyError):
-            continue
+    try:
+        addon_prefs = context.preferences.addons.get("linkforge")
+        if addon_prefs and hasattr(addon_prefs, "preferences"):
+            prefs = addon_prefs.preferences
+            if hasattr(prefs, "show_joint_axes"):
+                show_axes = prefs.show_joint_axes
+            if hasattr(prefs, "joint_axis_length"):
+                axis_length = prefs.joint_axis_length
+    except (AttributeError, KeyError):
+        pass
 
-    # Don't draw if disabled
     if not show_axes:
         return
 
