@@ -146,7 +146,9 @@ class TestXACROGenerator:
             robot.add_link(link)
             if i > 0:
                 robot.add_joint(
-                    Joint(name=f"j{i}", type=JointType.FIXED, parent=f"link{i-1}", child=f"link{i}")
+                    Joint(
+                        name=f"j{i}", type=JointType.FIXED, parent=f"link{i - 1}", child=f"link{i}"
+                    )
                 )
 
         generator = XACROGenerator(
@@ -178,7 +180,9 @@ class TestXACROGenerator:
             robot.add_link(link)
             if i > 0:
                 robot.add_joint(
-                    Joint(name=f"j{i}", type=JointType.FIXED, parent=f"link{i-1}", child=f"link{i}")
+                    Joint(
+                        name=f"j{i}", type=JointType.FIXED, parent=f"link{i - 1}", child=f"link{i}"
+                    )
                 )
 
         generator = XACROGenerator(
@@ -544,7 +548,9 @@ class TestXACROGenerator:
             robot.add_link(link)
             if i > 0:
                 robot.add_joint(
-                    Joint(name=f"j{i}", type=JointType.FIXED, parent=f"link{i-1}", child=f"link{i}")
+                    Joint(
+                        name=f"j{i}", type=JointType.FIXED, parent=f"link{i - 1}", child=f"link{i}"
+                    )
                 )
 
         # Generate with advanced_mode=False
