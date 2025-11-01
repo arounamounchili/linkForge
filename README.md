@@ -15,7 +15,8 @@ LinkForge enables robotics engineers to convert 3D robot models into valid URDF/
 ## Features
 
 ### Import/Export
-- **Import URDF/XACRO files** with full fidelity (NEW in v0.1.0!)
+- **Import URDF files** with full fidelity (NEW in v0.2.0!)
+- **XACRO conversion**: Use included converter tool (no ROS required)
 - **Export to URDF or XACRO** with meshes included
 - **Round-trip editing**: Import → Modify → Export workflow
 - **Material preservation**: Colors and materials maintained
@@ -69,10 +70,17 @@ LinkForge enables robotics engineers to convert 3D robot models into valid URDF/
 git clone https://github.com/arounamounchili/linkforge.git
 cd linkforge
 
-# Install Python development dependencies
-python3 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -e ".[dev]"
+# Install UV (if not already installed)
+# macOS/Linux
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Create virtual environment and install dependencies
+uv venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+uv pip install -e ".[dev]"
 
 # Build the extension package
 python build_extension.py
@@ -82,6 +90,13 @@ python build_extension.py
 # 2. Edit → Preferences → Get Extensions
 # 3. Dropdown (⌄) → Install from Disk
 # 4. Select dist/linkforge-{version}.zip
+```
+
+**Legacy pip workflow** (if you prefer pip over uv):
+```bash
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+pip install -e ".[dev]"
 ```
 
 **Alternative - Symlink for Development** (Advanced):
@@ -107,10 +122,20 @@ See [QUICKSTART.md](QUICKSTART.md) for a detailed 5-minute guide.
 ### Option 1: Import Existing URDF
 
 1. Press `N` → **LinkForge** tab → **Import** panel
-2. Click **"Import URDF/XACRO"**
+2. Click **"Import URDF"**
 3. Select your URDF file
 4. Robot appears with full hierarchy, materials, and properties
 5. Modify as needed and re-export
+
+**Have a XACRO file?** Convert it to URDF first:
+```bash
+# Option 1: Use the included converter (no ROS required)
+python tools/convert_xacro.py robot.urdf.xacro
+
+# Option 2: If you have ROS installed
+xacro robot.urdf.xacro > robot.urdf
+```
+See [Working with XACRO Files](#working-with-xacro-files) below for details.
 
 ### Option 2: Create from Scratch
 
@@ -154,6 +179,52 @@ Export to URDF or XACRO:
 4. Click **"Export URDF/XACRO"**
 
 Your robot is now ready for ROS2, RViz, and Gazebo!
+
+## Working with XACRO Files
+
+LinkForge v0.3.0+ provides **native XACRO support** out of the box - no installation required!
+
+### Unified Import (v0.3.0+)
+
+**One button, two formats** - automatically detects URDF or XACRO:
+
+1. Press `N` → **LinkForge** tab
+2. Click **"Import Robot"** button
+3. Select your `.urdf`, `.xacro`, or `.urdf.xacro` file
+4. Robot appears in Blender!
+
+**That's it!** XACRO support is built-in and works immediately after installing the extension.
+
+### Advanced: Manual Conversion (Optional)
+
+If you need fine-grained control over XACRO conversion, you can still use external tools:
+
+**A) Standalone Converter Tool (included)**
+
+```bash
+# Convert your XACRO file
+python tools/convert_xacro.py robot.urdf.xacro
+# Creates: robot.urdf
+
+# See all options
+python tools/convert_xacro.py --help
+```
+
+**B) ROS xacro Command (if you have ROS)**
+
+```bash
+xacro robot.urdf.xacro > robot.urdf
+# Or in ROS2
+ros2 run xacro xacro robot.urdf.xacro > robot.urdf
+```
+
+### What LinkForge DOES Support
+
+- **URDF Import**: Full support for all URDF features
+- **XACRO Export**: LinkForge can export to XACRO with properties and macros
+- **Round-trip**: Import URDF → Edit → Export XACRO
+
+See [tools/README.md](tools/README.md) for detailed XACRO conversion documentation.
 
 ## Documentation
 
