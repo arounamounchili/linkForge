@@ -412,8 +412,3 @@ class XACROGenerator:
             return "\n".join(lines) + "\n"
         else:
             return ET.tostring(element, encoding="unicode")
-
-
-# Future enhancement: XACROMacroGenerator
-# This would analyze the robot and auto-generate macros for repeated patterns
-# Example: if multiple wheels have the same geometry, create a wheel macro

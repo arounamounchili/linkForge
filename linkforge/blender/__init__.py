@@ -4,7 +4,7 @@ This module contains all Blender-specific code:
 - Property Groups: Store data on Blender objects
 - Operators: User actions/commands
 - Panels: User interface
-- Gizmos: Visual helpers (future)
+- Handlers: Event handlers for scene updates
 """
 
 from __future__ import annotations
