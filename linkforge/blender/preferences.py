@@ -67,38 +67,15 @@ class LinkForgePreferences(AddonPreferences):
         """Draw the preferences UI."""
         layout = self.layout
 
-        # Joint Visualization Section
         box = layout.box()
         box.label(text="Joint Visualization", icon="EMPTY_ARROWS")
 
-        # Toggle checkbox
         row = box.row()
-        row.prop(self, "show_joint_axes", text="Show Joint Axes (RGB Arrows)")
+        row.prop(self, "show_joint_axes", text="Show Joint Axes (RGB)")
 
-        # Length slider
         row = box.row()
         row.prop(self, "joint_axis_length", slider=True)
         row.enabled = self.show_joint_axes
-
-        # Quick access note
-        box.separator()
-        info_box = box.box()
-        info_box.label(text="Quick Access:", icon="INFO")
-        info_box.label(text="Toggle in 3D View → N Panel → LinkForge → Joints")
-
-        # Help text
-        box.separator()
-        help_box = box.box()
-        help_box.label(text="RGB Axis Colors (RViz Convention):", icon="COLOR")
-        col = help_box.column(align=True)
-        col.label(text="  Red Arrow = X axis", icon="EVENT_X")
-        col.label(text="  Green Arrow = Y axis", icon="EVENT_Y")
-        col.label(text="  Blue Arrow = Z axis", icon="EVENT_Z")
-
-        # Usage tip
-        box.separator()
-        tip_box = box.box()
-        tip_box.label(text="Tip: Adjust 'Axis Length' to match your robot's scale", icon="LIGHT")
 
 
 def register():
