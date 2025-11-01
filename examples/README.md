@@ -66,32 +66,24 @@ Simple serial manipulator with 4 revolute joints. Clean design without unnecessa
 
 1. Open Blender 4.2+
 2. Press `N` → **LinkForge** tab
-3. Click **"Import URDF/XACRO"**
-4. Select example file
-5. Robot appears in viewport
+3. Click **"Import Robot"**
+4. Select example file (`.urdf`, `.xacro`, or `.urdf.xacro`)
+5. Robot appears in viewport with full hierarchy
 
 ### Visualize in RViz2
 
 ```bash
-# Publish robot description
 ros2 run robot_state_publisher robot_state_publisher \
   --ros-args -p robot_description:="$(cat mobile_robot.urdf)"
 
-# Launch RViz
 ros2 run rviz2 rviz2
-
-# In RViz:
-# - Add → RobotModel
-# - Set Fixed Frame: base_link
+# Add → RobotModel, Set Fixed Frame: base_link
 ```
 
 ### Test in Gazebo
 
 ```bash
-gazebo --verbose
-ros2 run gazebo_ros spawn_entity.py \
-  -entity my_robot \
-  -file mobile_robot.urdf
+ros2 run gazebo_ros spawn_entity.py -entity my_robot -file mobile_robot.urdf
 ```
 
 ---
@@ -113,54 +105,21 @@ ros2 run gazebo_ros spawn_entity.py \
 
 ## Validation
 
-Test with LinkForge:
+Validate before export in Blender:
+1. Click **"Validate"** in LinkForge panel
+2. Review any warnings or errors
+3. Fix issues and re-validate
 
-```python
-from linkforge.core.parsers.urdf_parser import parse_urdf
-
-robot = parse_urdf("mobile_robot.urdf")
-print(f"Robot: {robot.name}")
-print(f"Links: {len(robot.links)}")
-print(f"Joints: {len(robot.joints)}")
-```
-
-All examples include:
-- Valid URDF syntax
-- Proper inertial properties
-- Realistic dimensions
-- Correct joint limits
+All examples include valid URDF syntax, proper inertial properties, realistic dimensions, and correct joint limits.
 
 ---
 
 ## ROS2 Integration
 
-### Navigation (Mobile Robot)
+**Mobile Robot**: Use with Nav2 for autonomous navigation
+**Robot Arm**: Use with MoveIt! for motion planning
 
-```bash
-# Launch Nav2
-ros2 launch nav2_bringup navigation_launch.py
-
-# Send goal
-ros2 topic pub /goal_pose geometry_msgs/PoseStamped ...
-```
-
-### MoveIt! (Robot Arm)
-
-```bash
-# Setup MoveIt config
-ros2 run moveit_setup_assistant moveit_setup_assistant
-
-# Launch MoveIt
-ros2 launch <robot>_moveit_config demo.launch.py
-```
-
----
-
-## License
-
-GPL-3.0-or-later (same as LinkForge)
-
-Free for research, education, and commercial use.
+See ROS2 documentation for setup details.
 
 ---
 

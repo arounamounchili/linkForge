@@ -15,8 +15,7 @@ LinkForge enables robotics engineers to convert 3D robot models into valid URDF/
 ## Features
 
 ### Import/Export
-- **Import URDF files** with full fidelity (NEW in v0.2.0!)
-- **XACRO conversion**: Use included converter tool (no ROS required)
+- **Import URDF/XACRO files** - automatic format detection
 - **Export to URDF or XACRO** with meshes included
 - **Round-trip editing**: Import → Modify → Export workflow
 - **Material preservation**: Colors and materials maintained
@@ -117,25 +116,15 @@ mklink /D "%APPDATA%\Blender Foundation\Blender\4.2\extensions\user_default\link
 
 ## Quick Start
 
-See [QUICKSTART.md](QUICKSTART.md) for a detailed 5-minute guide.
+### Option 1: Import Existing URDF/XACRO
 
-### Option 1: Import Existing URDF
-
-1. Press `N` → **LinkForge** tab → **Import** panel
-2. Click **"Import URDF"**
-3. Select your URDF file
+1. Press `N` → **LinkForge** tab
+2. Click **"Import Robot"**
+3. Select your `.urdf`, `.xacro`, or `.urdf.xacro` file
 4. Robot appears with full hierarchy, materials, and properties
 5. Modify as needed and re-export
 
-**Have a XACRO file?** Convert it to URDF first:
-```bash
-# Option 1: Use the included converter (no ROS required)
-python tools/convert_xacro.py robot.urdf.xacro
-
-# Option 2: If you have ROS installed
-xacro robot.urdf.xacro > robot.urdf
-```
-See [Working with XACRO Files](#working-with-xacro-files) below for details.
+**XACRO support is built-in!** No conversion needed - just select your XACRO file directly.
 
 ### Option 2: Create from Scratch
 
@@ -180,61 +169,21 @@ Export to URDF or XACRO:
 
 Your robot is now ready for ROS2, RViz, and Gazebo!
 
-## Working with XACRO Files
+## XACRO Support
 
-LinkForge v0.3.0+ provides **native XACRO support** out of the box - no installation required!
+LinkForge provides **native XACRO support** out of the box - no installation or conversion required!
 
-### Unified Import (v0.3.0+)
+**Import**: Click "Import Robot" and select any `.urdf`, `.xacro`, or `.urdf.xacro` file
+**Export**: Choose "XACRO" format with automatic properties and macro generation
 
-**One button, two formats** - automatically detects URDF or XACRO:
-
-1. Press `N` → **LinkForge** tab
-2. Click **"Import Robot"** button
-3. Select your `.urdf`, `.xacro`, or `.urdf.xacro` file
-4. Robot appears in Blender!
-
-**That's it!** XACRO support is built-in and works immediately after installing the extension.
-
-### Advanced: Manual Conversion (Optional)
-
-If you need fine-grained control over XACRO conversion, you can still use external tools:
-
-**A) Standalone Converter Tool (included)**
-
-```bash
-# Convert your XACRO file
-python tools/convert_xacro.py robot.urdf.xacro
-# Creates: robot.urdf
-
-# See all options
-python tools/convert_xacro.py --help
-```
-
-**B) ROS xacro Command (if you have ROS)**
-
-```bash
-xacro robot.urdf.xacro > robot.urdf
-# Or in ROS2
-ros2 run xacro xacro robot.urdf.xacro > robot.urdf
-```
-
-### What LinkForge DOES Support
-
-- **URDF Import**: Full support for all URDF features
-- **XACRO Export**: LinkForge can export to XACRO with properties and macros
-- **Round-trip**: Import URDF → Edit → Export XACRO
-
-See [tools/README.md](tools/README.md) for detailed XACRO conversion documentation.
+For advanced command-line conversion, use the included tool: `python tools/convert_xacro.py robot.urdf.xacro`
 
 ## Documentation
 
-- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
-- **[RELEASE_NOTES.md](RELEASE_NOTES.md)** - v0.1.0 features and changelog
-- **[examples/](examples/)** - 3 example URDFs with documentation:
-  - `simple_arm.urdf` - 2-DOF robot arm (revolute joints)
-  - `simple_gripper.urdf` - Parallel gripper (prismatic + mimic)
-  - `mobile_base.urdf` - Wheeled robot (continuous + fixed joints)
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Development guidelines
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and changes
+- **[examples/](examples/)** - Example URDF files:
+  - `robot_arm.urdf` - Robot arm with revolute joints
+  - `mobile_robot.urdf` - Mobile base with continuous and fixed joints
 
 ## Target Audience
 
@@ -268,10 +217,10 @@ pytest tests/core/test_inertia.py
 
 ```bash
 # Format code
-black linkforge tests
+ruff format linkforge tests
 
 # Lint
-ruff check linkforge
+ruff check linkforge tests
 
 # Type checking
 mypy linkforge
@@ -289,7 +238,11 @@ This design allows the core logic to be thoroughly tested without Blender and po
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch from `develop`
+3. Run tests and quality checks before submitting
+4. Open a pull request targeting `develop`
 
 ## License
 

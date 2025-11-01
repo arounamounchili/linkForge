@@ -4,106 +4,55 @@ Utility scripts for working with LinkForge and robot description files.
 
 ## XACRO to URDF Converter
 
-`convert_xacro.py` - Convert XACRO files to URDF without requiring ROS installation.
+`convert_xacro.py` - Standalone command-line tool for converting XACRO files to URDF.
 
-### Installation
+> **Note**: As of LinkForge v0.3.0, **XACRO import is built-in**! You can directly import XACRO files in Blender without conversion. This tool is provided for command-line workflows and automation.
 
-The converter requires the `xacrodoc` Python package:
+### Quick Start
+
+**No installation needed** - uses LinkForge's bundled dependencies:
 
 ```bash
-pip install xacrodoc
-```
-
-### Usage
-
-**Basic conversion** (creates `robot.urdf` from `robot.urdf.xacro`):
-```bash
+# Convert XACRO to URDF
 python tools/convert_xacro.py robot.urdf.xacro
-```
 
-**Specify output file:**
-```bash
+# Specify output file
 python tools/convert_xacro.py robot.urdf.xacro -o my_robot.urdf
-```
 
-**Compact output (no pretty printing):**
-```bash
+# Compact output (no pretty printing)
 python tools/convert_xacro.py robot.urdf.xacro --no-pretty
 ```
 
-**Check if xacrodoc is installed:**
-```bash
-python tools/convert_xacro.py --check
-```
+### When to Use This Tool
 
-### Why This Tool?
+**Use the converter for:**
+- ✅ Command-line automation/scripting
+- ✅ CI/CD pipelines
+- ✅ Batch conversion of multiple files
+- ✅ Debugging XACRO files
 
-LinkForge imports **URDF files only**. If you have XACRO files, you need to convert them first.
+**Use Blender import for:**
+- ✅ Interactive editing in Blender
+- ✅ Visual inspection of robots
+- ✅ One-off imports
 
-**Options for conversion:**
+### Alternative: ROS xacro Command
 
-1. **Use this tool** (recommended for non-ROS users):
-   - No ROS installation required
-   - Simple Python script
-   - Uses industry-standard `xacrodoc` library
+If you have ROS2 installed:
 
-2. **Use ROS xacro** (if you have ROS installed):
-   ```bash
-   xacro robot.urdf.xacro > robot.urdf
-   ```
-
-3. **Manual xacrodoc usage:**
-   ```bash
-   pip install xacrodoc
-   python -c "from xacrodoc import XacroDoc; print(XacroDoc.from_file('robot.urdf.xacro').to_urdf_string())" > robot.urdf
-   ```
-
-### About XACRO
-
-XACRO (XML Macros) is an extension of URDF that supports:
-- Variables and properties: `<xacro:property name="width" value="0.2"/>`
-- Macros for repeated elements: `<xacro:macro name="wheel" params="prefix">`
-- Mathematical expressions: `${pi/2}`, `${width*2}`
-- File includes: `<xacro:include filename="common.xacro"/>`
-- Package references: `$(find my_robot_description)/urdf/base.xacro`
-
-XACRO files must be "compiled" to plain URDF before use in most simulators and tools.
-
-### Troubleshooting
-
-**"xacrodoc is not installed"**
-```bash
-pip install xacrodoc
-```
-
-**"Module 'rospkg' not found"**
-
-xacrodoc requires rospkg for package resolution:
-```bash
-pip install rospkg
-```
-
-**"Conversion failed"**
-
-Check that your XACRO file is valid. Common issues:
-- Syntax errors in XACRO macros
-- Missing included files
-- Invalid package references
-
-### Alternative: Full ROS Installation
-
-If you're doing serious ROS development, install ROS2 and use the built-in `xacro` command:
-
-- **ROS2 Humble**: https://docs.ros.org/en/humble/Installation.html
-- **ROS2 Jazzy**: https://docs.ros.org/en/jazzy/Installation.html
-
-Then use:
 ```bash
 ros2 run xacro xacro robot.urdf.xacro > robot.urdf
 ```
+
+### About XACRO
+
+XACRO (XML Macros) extends URDF with:
+- Variables/properties: `<xacro:property name="width" value="0.2"/>`
+- Macros: `<xacro:macro name="wheel" params="prefix">`
+- Math expressions: `${pi/2}`, `${width*2}`
+- File includes: `<xacro:include filename="common.xacro"/>`
 
 ### Learn More
 
 - **xacrodoc**: https://github.com/adamheins/xacrodoc
 - **XACRO Tutorial**: https://docs.ros.org/en/foxy/Tutorials/Intermediate/URDF/Using-Xacro-to-Clean-Up-a-URDF-File.html
-- **URDF Specification**: http://wiki.ros.org/urdf/XML

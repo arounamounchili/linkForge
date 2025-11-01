@@ -36,14 +36,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Total**: 201 tests passing (up from 193)
 - **Coverage**: 99% for urdf_parser.py
 
-### Technical Details
+### Changed
+- **Build System**: Migrated from setuptools to Hatchling (PEP 621)
+- **Formatting**: Unified on Ruff for both linting and formatting (removed Black)
+- **Package Manager**: Recommended UV instead of pip (10-100x faster)
 
+### Technical Details
 - **201 tests passing** (8 new tests for Phase 2)
-- Ruff linting: 100% compliant
-- Black formatting: 100% compliant
-- Coverage: 99% for urdf_parser.py
+- **Ruff**: 100% compliant (linting + formatting)
+- **Coverage**: 99% for urdf_parser.py
 - **Bundled dependencies**: xacrodoc + rospkg included in extension package
-- **Package size increase**: ~200KB (negligible for better UX)
+- **Package size increase**: ~310KB (negligible for better UX)
 
 ---
 
