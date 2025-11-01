@@ -320,11 +320,11 @@ def create_joint_object(joint: Joint, link_objects: dict, collection=None) -> ob
     if bpy is None:
         return None
 
-    # Create Empty object with RViz-style 3-axis visualization
+    # Create Empty object (RGB axes will be drawn via gizmos)
     bpy.ops.object.empty_add(type="ARROWS", location=(0, 0, 0))
     empty = bpy.context.active_object
     empty.name = joint.name  # Clean name without "joint_" prefix
-    empty.empty_display_size = 0.15  # Larger and more visible
+    empty.empty_display_size = 0.0  # Hide default arrows (use RGB axes instead)
 
     # Set joint properties
     if hasattr(empty, "linkforge_joint"):
