@@ -29,16 +29,22 @@ class LINKFORGE_PT_joint_panel(Panel):
         # Visualization settings (always visible)
         vis_box = layout.box()
         vis_box.label(text="Visualization", icon="HIDE_OFF")
-        try:
-            addon_prefs = context.preferences.addons.get("linkforge")
-            if addon_prefs:
-                row = vis_box.row()
-                row.prop(addon_prefs.preferences, "show_joint_axes", text="Show Axes (RGB)")
-                row = vis_box.row()
-                row.prop(addon_prefs.preferences, "joint_axis_length", text="Length")
-                row.enabled = addon_prefs.preferences.show_joint_axes
-        except (AttributeError, KeyError):
-            vis_box.label(text="Preferences not available", icon="ERROR")
+
+        # Get the correct addon name (works for both dev and installed extension)
+        addon_name = __package__.split(".")[0] if "." in __package__ else "linkforge"
+        addon_prefs = context.preferences.addons.get(addon_name)
+
+        if addon_prefs and hasattr(addon_prefs, "preferences"):
+            prefs = addon_prefs.preferences
+            row = vis_box.row()
+            row.prop(prefs, "show_joint_axes", text="Show Axes (RGB)")
+            row = vis_box.row()
+            row.prop(prefs, "joint_axis_length", text="Length", slider=True)
+            row.enabled = prefs.show_joint_axes
+        else:
+            # Fallback if preferences not found
+            vis_box.label(text=f"Addon '{addon_name}' not found", icon="ERROR")
+            vis_box.label(text="Extension may need reload", icon="INFO")
 
         # Create Joint buttons (always visible)
         box = layout.box()
