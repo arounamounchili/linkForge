@@ -12,15 +12,16 @@ except ImportError:
 
 from ...core.presets import JointPreset, MaterialPreset, PresetManager, SensorPreset
 
+# Global preset manager instance (cached for performance)
+_PRESET_MANAGER = None
+
 
 def get_preset_manager():
     """Get the global preset manager instance."""
-    # Store in window manager to persist across sessions
-    if not hasattr(bpy.types.WindowManager, "linkforge_preset_manager"):
-        return PresetManager()
-
-    # Return cached instance
-    return PresetManager()
+    global _PRESET_MANAGER
+    if _PRESET_MANAGER is None:
+        _PRESET_MANAGER = PresetManager()
+    return _PRESET_MANAGER
 
 
 class LINKFORGE_OT_apply_joint_preset(Operator):

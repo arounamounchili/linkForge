@@ -744,35 +744,34 @@ def blender_transmission_to_core(obj: Any) -> Transmission | None:
 
     transmission_name = props.transmission_name if props.transmission_name else obj.name
 
+    # Transmission type mapping
+    transmission_type_map = {
+        "SIMPLE": TransmissionType.SIMPLE.value,
+        "DIFFERENTIAL": TransmissionType.DIFFERENTIAL.value,
+        "FOUR_BAR_LINKAGE": TransmissionType.FOUR_BAR_LINKAGE.value,
+    }
+
     # Determine transmission type
     trans_type_str = props.transmission_type
-    if trans_type_str == "SIMPLE":
-        trans_type = TransmissionType.SIMPLE.value
-    elif trans_type_str == "DIFFERENTIAL":
-        trans_type = TransmissionType.DIFFERENTIAL.value
-    elif trans_type_str == "FOUR_BAR_LINKAGE":
-        trans_type = TransmissionType.FOUR_BAR_LINKAGE.value
-    elif trans_type_str == "CUSTOM":
+    if trans_type_str == "CUSTOM":
         trans_type = props.custom_type if props.custom_type else "custom"
     else:
-        trans_type = TransmissionType.SIMPLE.value
+        trans_type = transmission_type_map.get(trans_type_str, TransmissionType.SIMPLE.value)
+
+    # Hardware interface mapping
+    hardware_interface_map = {
+        "POSITION": HardwareInterface.COMMAND_POSITION.value,
+        "VELOCITY": HardwareInterface.COMMAND_VELOCITY.value,
+        "EFFORT": HardwareInterface.COMMAND_EFFORT.value,
+        "POSITION_ROS1": HardwareInterface.POSITION.value,
+        "VELOCITY_ROS1": HardwareInterface.VELOCITY.value,
+        "EFFORT_ROS1": HardwareInterface.EFFORT.value,
+    }
 
     # Determine hardware interface
-    hardware_iface_str = props.hardware_interface
-    if hardware_iface_str == "POSITION":
-        hardware_interface = HardwareInterface.COMMAND_POSITION.value
-    elif hardware_iface_str == "VELOCITY":
-        hardware_interface = HardwareInterface.COMMAND_VELOCITY.value
-    elif hardware_iface_str == "EFFORT":
-        hardware_interface = HardwareInterface.COMMAND_EFFORT.value
-    elif hardware_iface_str == "POSITION_ROS1":
-        hardware_interface = HardwareInterface.POSITION.value
-    elif hardware_iface_str == "VELOCITY_ROS1":
-        hardware_interface = HardwareInterface.VELOCITY.value
-    elif hardware_iface_str == "EFFORT_ROS1":
-        hardware_interface = HardwareInterface.EFFORT.value
-    else:
-        hardware_interface = HardwareInterface.COMMAND_POSITION.value
+    hardware_interface = hardware_interface_map.get(
+        props.hardware_interface, HardwareInterface.COMMAND_POSITION.value
+    )
 
     # Build joints and actuators based on type
     joints: list[TransmissionJoint] = []

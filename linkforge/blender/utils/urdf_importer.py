@@ -271,33 +271,28 @@ def create_link_object(link: Link, urdf_dir: Path, collection=None) -> object | 
                 props.inertia_izz = inertia.izz
                 props.use_auto_inertia = False  # Don't recalculate
 
+        # Helper to get geometry type string from instance
+        def _get_geometry_type_str(geometry):
+            """Get geometry type string from geometry instance."""
+            geometry_type_map = {
+                Box: "BOX",
+                Cylinder: "CYLINDER",
+                Sphere: "SPHERE",
+                Capsule: "CAPSULE",
+                Mesh: "MESH",
+            }
+            for geom_class, type_str in geometry_type_map.items():
+                if isinstance(geometry, geom_class):
+                    return type_str
+            return "MESH"  # Default fallback
+
         # Set geometry type
         if link.visual:
-            visual = link.visual
-            if isinstance(visual.geometry, Box):
-                props.visual_geometry_type = "BOX"
-            elif isinstance(visual.geometry, Cylinder):
-                props.visual_geometry_type = "CYLINDER"
-            elif isinstance(visual.geometry, Sphere):
-                props.visual_geometry_type = "SPHERE"
-            elif isinstance(visual.geometry, Capsule):
-                props.visual_geometry_type = "CAPSULE"
-            elif isinstance(visual.geometry, Mesh):
-                props.visual_geometry_type = "MESH"
+            props.visual_geometry_type = _get_geometry_type_str(link.visual.geometry)
 
         # Set collision geometry (if different from visual)
         if link.collision and link.collision.geometry:
-            collision_geom = link.collision.geometry
-            if isinstance(collision_geom, Box):
-                props.collision_geometry_type = "BOX"
-            elif isinstance(collision_geom, Cylinder):
-                props.collision_geometry_type = "CYLINDER"
-            elif isinstance(collision_geom, Sphere):
-                props.collision_geometry_type = "SPHERE"
-            elif isinstance(collision_geom, Capsule):
-                props.collision_geometry_type = "CAPSULE"
-            elif isinstance(collision_geom, Mesh):
-                props.collision_geometry_type = "MESH"
+            props.collision_geometry_type = _get_geometry_type_str(link.collision.geometry)
         else:
             # Use visual geometry for collision
             if link.visual:

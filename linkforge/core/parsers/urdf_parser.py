@@ -365,56 +365,36 @@ def parse_gazebo_element(gazebo_elem: ET.Element) -> GazeboElement:
     for plugin_elem in gazebo_elem.findall("plugin"):
         plugins.append(parse_gazebo_plugin(plugin_elem))
 
+    # Helper functions for parsing optional elements
+    def _parse_optional_bool(elem: ET.Element, tag: str, default: str = "false") -> bool | None:
+        """Parse optional boolean element."""
+        if elem.find(tag) is not None:
+            return elem.findtext(tag, default).lower() == "true"
+        return None
+
+    def _parse_optional_float(elem: ET.Element, tag: str, default: str = "0") -> float | None:
+        """Parse optional float element."""
+        if elem.find(tag) is not None:
+            return float(elem.findtext(tag, default))
+        return None
+
     # Parse common properties
     material = gazebo_elem.findtext("material")
 
     # Parse boolean properties
-    self_collide = None
-    if gazebo_elem.find("selfCollide") is not None:
-        self_collide = gazebo_elem.findtext("selfCollide", "false").lower() == "true"
-
-    static = None
-    if gazebo_elem.find("static") is not None:
-        static = gazebo_elem.findtext("static", "false").lower() == "true"
-
-    gravity = None
-    if gazebo_elem.find("gravity") is not None:
-        gravity = gazebo_elem.findtext("gravity", "true").lower() == "true"
-
-    provide_feedback = None
-    if gazebo_elem.find("provideFeedback") is not None:
-        provide_feedback = gazebo_elem.findtext("provideFeedback", "false").lower() == "true"
-
-    implicit_spring_damper = None
-    if gazebo_elem.find("implicitSpringDamper") is not None:
-        implicit_spring_damper = (
-            gazebo_elem.findtext("implicitSpringDamper", "false").lower() == "true"
-        )
+    self_collide = _parse_optional_bool(gazebo_elem, "selfCollide")
+    static = _parse_optional_bool(gazebo_elem, "static")
+    gravity = _parse_optional_bool(gazebo_elem, "gravity", "true")
+    provide_feedback = _parse_optional_bool(gazebo_elem, "provideFeedback")
+    implicit_spring_damper = _parse_optional_bool(gazebo_elem, "implicitSpringDamper")
 
     # Parse numeric properties
-    mu1 = None
-    if gazebo_elem.find("mu1") is not None:
-        mu1 = float(gazebo_elem.findtext("mu1", "0"))
-
-    mu2 = None
-    if gazebo_elem.find("mu2") is not None:
-        mu2 = float(gazebo_elem.findtext("mu2", "0"))
-
-    kp = None
-    if gazebo_elem.find("kp") is not None:
-        kp = float(gazebo_elem.findtext("kp", "0"))
-
-    kd = None
-    if gazebo_elem.find("kd") is not None:
-        kd = float(gazebo_elem.findtext("kd", "0"))
-
-    stop_cfm = None
-    if gazebo_elem.find("stopCfm") is not None:
-        stop_cfm = float(gazebo_elem.findtext("stopCfm", "0"))
-
-    stop_erp = None
-    if gazebo_elem.find("stopErp") is not None:
-        stop_erp = float(gazebo_elem.findtext("stopErp", "0"))
+    mu1 = _parse_optional_float(gazebo_elem, "mu1")
+    mu2 = _parse_optional_float(gazebo_elem, "mu2")
+    kp = _parse_optional_float(gazebo_elem, "kp")
+    kd = _parse_optional_float(gazebo_elem, "kd")
+    stop_cfm = _parse_optional_float(gazebo_elem, "stopCfm")
+    stop_erp = _parse_optional_float(gazebo_elem, "stopErp")
 
     # Store any other elements as properties
     for child in gazebo_elem:

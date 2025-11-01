@@ -333,6 +333,22 @@ class URDFGenerator:
                 reduction_elem = ET.SubElement(actuator_elem, "mechanicalReduction")
                 reduction_elem.text = str(actuator.mechanical_reduction)
 
+    @staticmethod
+    def _add_optional_bool_element(parent: ET.Element, tag: str, value: bool | None) -> None:
+        """Add optional boolean XML element if value is not None."""
+        if value is not None:
+            elem = ET.SubElement(parent, tag)
+            elem.text = "true" if value else "false"
+
+    @staticmethod
+    def _add_optional_numeric_element(
+        parent: ET.Element, tag: str, value: float | int | None
+    ) -> None:
+        """Add optional numeric XML element if value is not None."""
+        if value is not None:
+            elem = ET.SubElement(parent, tag)
+            elem.text = str(value)
+
     def _add_gazebo_element(self, parent: ET.Element, gazebo_elem: GazeboElement) -> None:
         """Add Gazebo extension element to parent.
 
@@ -353,50 +369,21 @@ class URDFGenerator:
             material_elem.text = gazebo_elem.material
 
         # Add boolean properties
-        if gazebo_elem.self_collide is not None:
-            self_collide_elem = ET.SubElement(gz_elem, "selfCollide")
-            self_collide_elem.text = "true" if gazebo_elem.self_collide else "false"
-
-        if gazebo_elem.static is not None:
-            static_elem = ET.SubElement(gz_elem, "static")
-            static_elem.text = "true" if gazebo_elem.static else "false"
-
-        if gazebo_elem.gravity is not None:
-            gravity_elem = ET.SubElement(gz_elem, "gravity")
-            gravity_elem.text = "true" if gazebo_elem.gravity else "false"
-
-        if gazebo_elem.provide_feedback is not None:
-            feedback_elem = ET.SubElement(gz_elem, "provideFeedback")
-            feedback_elem.text = "true" if gazebo_elem.provide_feedback else "false"
-
-        if gazebo_elem.implicit_spring_damper is not None:
-            spring_elem = ET.SubElement(gz_elem, "implicitSpringDamper")
-            spring_elem.text = "true" if gazebo_elem.implicit_spring_damper else "false"
+        self._add_optional_bool_element(gz_elem, "selfCollide", gazebo_elem.self_collide)
+        self._add_optional_bool_element(gz_elem, "static", gazebo_elem.static)
+        self._add_optional_bool_element(gz_elem, "gravity", gazebo_elem.gravity)
+        self._add_optional_bool_element(gz_elem, "provideFeedback", gazebo_elem.provide_feedback)
+        self._add_optional_bool_element(
+            gz_elem, "implicitSpringDamper", gazebo_elem.implicit_spring_damper
+        )
 
         # Add numeric properties
-        if gazebo_elem.mu1 is not None:
-            mu1_elem = ET.SubElement(gz_elem, "mu1")
-            mu1_elem.text = str(gazebo_elem.mu1)
-
-        if gazebo_elem.mu2 is not None:
-            mu2_elem = ET.SubElement(gz_elem, "mu2")
-            mu2_elem.text = str(gazebo_elem.mu2)
-
-        if gazebo_elem.kp is not None:
-            kp_elem = ET.SubElement(gz_elem, "kp")
-            kp_elem.text = str(gazebo_elem.kp)
-
-        if gazebo_elem.kd is not None:
-            kd_elem = ET.SubElement(gz_elem, "kd")
-            kd_elem.text = str(gazebo_elem.kd)
-
-        if gazebo_elem.stop_cfm is not None:
-            cfm_elem = ET.SubElement(gz_elem, "stopCfm")
-            cfm_elem.text = str(gazebo_elem.stop_cfm)
-
-        if gazebo_elem.stop_erp is not None:
-            erp_elem = ET.SubElement(gz_elem, "stopErp")
-            erp_elem.text = str(gazebo_elem.stop_erp)
+        self._add_optional_numeric_element(gz_elem, "mu1", gazebo_elem.mu1)
+        self._add_optional_numeric_element(gz_elem, "mu2", gazebo_elem.mu2)
+        self._add_optional_numeric_element(gz_elem, "kp", gazebo_elem.kp)
+        self._add_optional_numeric_element(gz_elem, "kd", gazebo_elem.kd)
+        self._add_optional_numeric_element(gz_elem, "stopCfm", gazebo_elem.stop_cfm)
+        self._add_optional_numeric_element(gz_elem, "stopErp", gazebo_elem.stop_erp)
 
         # Add custom properties
         for key, value in gazebo_elem.properties.items():
