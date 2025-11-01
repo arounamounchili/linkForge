@@ -6,6 +6,7 @@ from .inertia import (
     calculate_cylinder_inertia,
     calculate_inertia,
     calculate_mesh_inertia,
+    calculate_mesh_inertia_from_triangles,
     calculate_sphere_inertia,
 )
 from .mass import (
@@ -23,6 +24,7 @@ __all__ = [
     "calculate_sphere_inertia",
     "calculate_capsule_inertia",
     "calculate_mesh_inertia",
+    "calculate_mesh_inertia_from_triangles",
     # Mass
     "calculate_volume",
     "calculate_mass_from_density",

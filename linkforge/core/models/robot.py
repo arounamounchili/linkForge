@@ -4,8 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .gazebo import GazeboElement
 from .joint import Joint
 from .link import Link
+from .sensor import Sensor
+from .transmission import Transmission
 
 
 @dataclass
@@ -13,11 +16,15 @@ class Robot:
     """Complete robot description.
 
     A robot consists of links connected by joints, forming a kinematic tree.
+    May also include sensors, transmissions, and Gazebo-specific elements.
     """
 
     name: str
     links: list[Link] = field(default_factory=list)
     joints: list[Joint] = field(default_factory=list)
+    sensors: list[Sensor] = field(default_factory=list)
+    transmissions: list[Transmission] = field(default_factory=list)
+    gazebo_elements: list[GazeboElement] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Validate robot."""
@@ -72,6 +79,78 @@ class Robot:
             return [joint for joint in self.joints if joint.parent == link_name]
         else:
             return [joint for joint in self.joints if joint.child == link_name]
+
+    def add_sensor(self, sensor: Sensor) -> None:
+        """Add a sensor to the robot."""
+        if self.get_sensor(sensor.name) is not None:
+            raise ValueError(f"Sensor '{sensor.name}' already exists")
+
+        # Validate that the link exists
+        if self.get_link(sensor.link_name) is None:
+            raise ValueError(f"Sensor '{sensor.name}': link '{sensor.link_name}' not found")
+
+        self.sensors.append(sensor)
+
+    def get_sensor(self, name: str) -> Sensor | None:
+        """Get sensor by name."""
+        return next((sensor for sensor in self.sensors if sensor.name == name), None)
+
+    def get_sensors_for_link(self, link_name: str) -> list[Sensor]:
+        """Get all sensors attached to a link."""
+        return [sensor for sensor in self.sensors if sensor.link_name == link_name]
+
+    def add_transmission(self, transmission: Transmission) -> None:
+        """Add a transmission to the robot."""
+        if self.get_transmission(transmission.name) is not None:
+            raise ValueError(f"Transmission '{transmission.name}' already exists")
+
+        # Validate that all referenced joints exist
+        joint_names = {joint.name for joint in self.joints}
+        for trans_joint in transmission.joints:
+            if trans_joint.name not in joint_names:
+                raise ValueError(
+                    f"Transmission '{transmission.name}': joint '{trans_joint.name}' not found"
+                )
+
+        self.transmissions.append(transmission)
+
+    def get_transmission(self, name: str) -> Transmission | None:
+        """Get transmission by name."""
+        return next((trans for trans in self.transmissions if trans.name == name), None)
+
+    def get_transmissions_for_joint(self, joint_name: str) -> list[Transmission]:
+        """Get all transmissions that use a joint."""
+        return [
+            trans for trans in self.transmissions if any(j.name == joint_name for j in trans.joints)
+        ]
+
+    def add_gazebo_element(self, element: GazeboElement) -> None:
+        """Add a Gazebo element to the robot."""
+        # Validate reference if specified
+        if element.reference is not None:
+            # Check if reference is a link or joint
+            if (
+                self.get_link(element.reference) is None
+                and self.get_joint(element.reference) is None
+            ):
+                raise ValueError(
+                    f"Gazebo element reference '{element.reference}' "
+                    "does not match any link or joint"
+                )
+
+        self.gazebo_elements.append(element)
+
+    def get_gazebo_elements_for_link(self, link_name: str) -> list[GazeboElement]:
+        """Get all Gazebo elements for a link."""
+        return [elem for elem in self.gazebo_elements if elem.reference == link_name]
+
+    def get_gazebo_elements_for_joint(self, joint_name: str) -> list[GazeboElement]:
+        """Get all Gazebo elements for a joint."""
+        return [elem for elem in self.gazebo_elements if elem.reference == joint_name]
+
+    def get_robot_level_gazebo_elements(self) -> list[GazeboElement]:
+        """Get robot-level Gazebo elements (no reference)."""
+        return [elem for elem in self.gazebo_elements if elem.reference is None]
 
     def get_root_link(self) -> Link | None:
         """Get the root link of the kinematic tree.
@@ -197,9 +276,16 @@ class Robot:
 
     def __str__(self) -> str:
         """String representation."""
-        return (
-            f"Robot(name={self.name}, "
-            f"links={len(self.links)}, "
-            f"joints={len(self.joints)}, "
-            f"dof={self.degrees_of_freedom})"
-        )
+        parts = [
+            f"Robot(name={self.name}",
+            f"links={len(self.links)}",
+            f"joints={len(self.joints)}",
+            f"dof={self.degrees_of_freedom}",
+        ]
+        if self.sensors:
+            parts.append(f"sensors={len(self.sensors)}")
+        if self.transmissions:
+            parts.append(f"transmissions={len(self.transmissions)}")
+        if self.gazebo_elements:
+            parts.append(f"gazebo_elements={len(self.gazebo_elements)}")
+        return ", ".join(parts) + ")"

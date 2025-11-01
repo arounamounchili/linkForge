@@ -62,6 +62,30 @@ class LINKFORGE_PT_joint_panel(Panel):
         box.label(text=f"Joint: {obj.name}", icon="EMPTY_ARROWS")
         box.prop(props, "joint_name")
 
+        # Presets section
+        box.separator()
+        preset_box = box.box()
+        preset_box.label(text="Presets:", icon="PRESET")
+
+        # Get available presets
+        from ...core.presets import PresetManager
+
+        manager = PresetManager()
+        presets = manager.list_joint_presets()
+
+        if presets:
+            # Create menu for preset selection
+            row = preset_box.row()
+            row.label(text="Apply:")
+            for preset_name in presets[:5]:  # Show first 5 presets
+                op = row.operator(
+                    "linkforge.apply_joint_preset", text=preset_name[:15], icon="IMPORT"
+                )
+                op.preset_name = preset_name
+
+        # Save current as preset
+        preset_box.operator("linkforge.save_joint_preset", icon="FILE_TICK")
+
         # Joint type
         box.separator()
         box.prop(props, "joint_type")

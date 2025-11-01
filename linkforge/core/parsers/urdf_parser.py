@@ -11,6 +11,8 @@ from ..models import (
     Collision,
     Color,
     Cylinder,
+    GazeboElement,
+    GazeboPlugin,
     Inertial,
     InertiaTensor,
     Joint,
@@ -24,6 +26,9 @@ from ..models import (
     Robot,
     Sphere,
     Transform,
+    Transmission,
+    TransmissionActuator,
+    TransmissionJoint,
     Vector3,
     Visual,
 )
@@ -239,6 +244,217 @@ def parse_joint(joint_elem: ET.Element) -> Joint:
     )
 
 
+def parse_transmission(trans_elem: ET.Element) -> Transmission:
+    """Parse transmission element.
+
+    Args:
+        trans_elem: <transmission> XML element
+
+    Returns:
+        Transmission model
+    """
+    name = trans_elem.get("name", "")
+    trans_type = trans_elem.findtext("type", "")
+
+    # Parse joints
+    joints: list[TransmissionJoint] = []
+    for joint_elem in trans_elem.findall("joint"):
+        joint_name = joint_elem.get("name", "")
+
+        # Parse hardware interfaces
+        interfaces = []
+        for iface_elem in joint_elem.findall("hardwareInterface"):
+            interfaces.append(iface_elem.text or "position")
+
+        if not interfaces:
+            interfaces = ["position"]  # Default
+
+        # Parse mechanical reduction (optional)
+        reduction = 1.0
+        reduction_elem = joint_elem.find("mechanicalReduction")
+        if reduction_elem is not None and reduction_elem.text:
+            reduction = float(reduction_elem.text)
+
+        # Parse offset (optional)
+        offset = 0.0
+        offset_elem = joint_elem.find("offset")
+        if offset_elem is not None and offset_elem.text:
+            offset = float(offset_elem.text)
+
+        joints.append(
+            TransmissionJoint(
+                name=joint_name,
+                hardware_interfaces=interfaces,
+                mechanical_reduction=reduction,
+                offset=offset,
+            )
+        )
+
+    # Parse actuators
+    actuators: list[TransmissionActuator] = []
+    for actuator_elem in trans_elem.findall("actuator"):
+        actuator_name = actuator_elem.get("name", "")
+
+        # Parse hardware interfaces
+        interfaces = []
+        for iface_elem in actuator_elem.findall("hardwareInterface"):
+            interfaces.append(iface_elem.text or "position")
+
+        if not interfaces:
+            interfaces = ["position"]  # Default
+
+        # Parse mechanical reduction (optional)
+        reduction = 1.0
+        reduction_elem = actuator_elem.find("mechanicalReduction")
+        if reduction_elem is not None and reduction_elem.text:
+            reduction = float(reduction_elem.text)
+
+        actuators.append(
+            TransmissionActuator(
+                name=actuator_name,
+                hardware_interfaces=interfaces,
+                mechanical_reduction=reduction,
+            )
+        )
+
+    return Transmission(
+        name=name,
+        type=trans_type,
+        joints=joints,
+        actuators=actuators,
+    )
+
+
+def parse_gazebo_plugin(plugin_elem: ET.Element) -> GazeboPlugin:
+    """Parse Gazebo plugin element.
+
+    Args:
+        plugin_elem: <plugin> XML element
+
+    Returns:
+        GazeboPlugin model
+    """
+    name = plugin_elem.get("name", "")
+    filename = plugin_elem.get("filename", "")
+
+    # Parse all sub-elements as parameters
+    parameters: dict[str, str] = {}
+    for child in plugin_elem:
+        if child.text:
+            parameters[child.tag] = child.text.strip()
+
+    return GazeboPlugin(name=name, filename=filename, parameters=parameters)
+
+
+def parse_gazebo_element(gazebo_elem: ET.Element) -> GazeboElement:
+    """Parse Gazebo extension element.
+
+    Args:
+        gazebo_elem: <gazebo> XML element
+
+    Returns:
+        GazeboElement model
+    """
+    reference = gazebo_elem.get("reference", None)
+
+    # Parse properties as dict
+    properties: dict[str, str] = {}
+
+    # Parse plugins
+    plugins: list[GazeboPlugin] = []
+    for plugin_elem in gazebo_elem.findall("plugin"):
+        plugins.append(parse_gazebo_plugin(plugin_elem))
+
+    # Parse common properties
+    material = gazebo_elem.findtext("material")
+
+    # Parse boolean properties
+    self_collide = None
+    if gazebo_elem.find("selfCollide") is not None:
+        self_collide = gazebo_elem.findtext("selfCollide", "false").lower() == "true"
+
+    static = None
+    if gazebo_elem.find("static") is not None:
+        static = gazebo_elem.findtext("static", "false").lower() == "true"
+
+    gravity = None
+    if gazebo_elem.find("gravity") is not None:
+        gravity = gazebo_elem.findtext("gravity", "true").lower() == "true"
+
+    provide_feedback = None
+    if gazebo_elem.find("provideFeedback") is not None:
+        provide_feedback = gazebo_elem.findtext("provideFeedback", "false").lower() == "true"
+
+    implicit_spring_damper = None
+    if gazebo_elem.find("implicitSpringDamper") is not None:
+        implicit_spring_damper = (
+            gazebo_elem.findtext("implicitSpringDamper", "false").lower() == "true"
+        )
+
+    # Parse numeric properties
+    mu1 = None
+    if gazebo_elem.find("mu1") is not None:
+        mu1 = float(gazebo_elem.findtext("mu1", "0"))
+
+    mu2 = None
+    if gazebo_elem.find("mu2") is not None:
+        mu2 = float(gazebo_elem.findtext("mu2", "0"))
+
+    kp = None
+    if gazebo_elem.find("kp") is not None:
+        kp = float(gazebo_elem.findtext("kp", "0"))
+
+    kd = None
+    if gazebo_elem.find("kd") is not None:
+        kd = float(gazebo_elem.findtext("kd", "0"))
+
+    stop_cfm = None
+    if gazebo_elem.find("stopCfm") is not None:
+        stop_cfm = float(gazebo_elem.findtext("stopCfm", "0"))
+
+    stop_erp = None
+    if gazebo_elem.find("stopErp") is not None:
+        stop_erp = float(gazebo_elem.findtext("stopErp", "0"))
+
+    # Store any other elements as properties
+    for child in gazebo_elem:
+        if child.tag not in [
+            "plugin",
+            "material",
+            "selfCollide",
+            "static",
+            "gravity",
+            "provideFeedback",
+            "implicitSpringDamper",
+            "mu1",
+            "mu2",
+            "kp",
+            "kd",
+            "stopCfm",
+            "stopErp",
+        ]:
+            if child.text:
+                properties[child.tag] = child.text.strip()
+
+    return GazeboElement(
+        reference=reference,
+        properties=properties,
+        plugins=plugins,
+        material=material,
+        self_collide=self_collide,
+        static=static,
+        gravity=gravity,
+        stop_cfm=stop_cfm,
+        stop_erp=stop_erp,
+        provide_feedback=provide_feedback,
+        implicit_spring_damper=implicit_spring_damper,
+        mu1=mu1,
+        mu2=mu2,
+        kp=kp,
+        kd=kd,
+    )
+
+
 def _detect_xacro_file(root: ET.Element, filepath: Path) -> None:
     """Detect if file is XACRO and raise helpful error.
 
@@ -355,6 +571,16 @@ def parse_urdf(filepath: Path) -> Robot:
         joint = parse_joint(joint_elem)
         robot.add_joint(joint)
 
+    # Parse all transmissions
+    for trans_elem in root.findall("transmission"):
+        transmission = parse_transmission(trans_elem)
+        robot.transmissions.append(transmission)  # Direct append, validation done by Robot model
+
+    # Parse all Gazebo elements
+    for gazebo_elem in root.findall("gazebo"):
+        gazebo_element = parse_gazebo_element(gazebo_elem)
+        robot.gazebo_elements.append(gazebo_element)
+
     return robot
 
 
@@ -405,5 +631,15 @@ def parse_urdf_string(urdf_string: str) -> Robot:
     for joint_elem in root.findall("joint"):
         joint = parse_joint(joint_elem)
         robot.add_joint(joint)
+
+    # Parse all transmissions
+    for trans_elem in root.findall("transmission"):
+        transmission = parse_transmission(trans_elem)
+        robot.transmissions.append(transmission)
+
+    # Parse all Gazebo elements
+    for gazebo_elem in root.findall("gazebo"):
+        gazebo_element = parse_gazebo_element(gazebo_elem)
+        robot.gazebo_elements.append(gazebo_element)
 
     return robot

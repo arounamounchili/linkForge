@@ -325,6 +325,9 @@ def create_joint_object(joint: Joint, link_objects: dict, collection=None) -> ob
     empty = bpy.context.active_object
     empty.name = joint.name
 
+    # Set very small display size for easier selection (but invisible axes)
+    empty.empty_display_size = 0.01
+
     # Set joint properties
     if hasattr(empty, "linkforge_joint"):
         props = empty.linkforge_joint

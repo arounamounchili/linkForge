@@ -26,11 +26,16 @@ else:
 
 from ...core.models import (
     Box,
+    CameraInfo,
     Capsule,
     Collision,
     Color,
     Cylinder,
+    GazeboPlugin,
     Geometry,
+    GPSInfo,
+    HardwareInterface,
+    IMUInfo,
     Inertial,
     InertiaTensor,
     Joint,
@@ -38,16 +43,24 @@ from ...core.models import (
     JointLimits,
     JointMimic,
     JointType,
+    LidarInfo,
     Link,
     Material,
     Mesh,
     Robot,
+    Sensor,
+    SensorNoise,
+    SensorType,
     Sphere,
     Transform,
+    Transmission,
+    TransmissionActuator,
+    TransmissionJoint,
+    TransmissionType,
     Vector3,
     Visual,
 )
-from ...core.physics import calculate_inertia
+from ...core.physics import calculate_inertia, calculate_mesh_inertia_from_triangles
 
 
 def blender_to_vector3(vec: Any) -> Vector3:
@@ -185,6 +198,45 @@ def get_object_geometry(
     return None
 
 
+def extract_mesh_triangles(
+    obj: Any,
+) -> tuple[list[tuple[float, float, float]], list[tuple[int, int, int]]] | None:
+    """Extract triangle mesh data from Blender object.
+
+    Args:
+        obj: Blender mesh object
+
+    Returns:
+        Tuple of (vertices, triangles) or None if not a mesh
+        vertices: List of (x, y, z) coordinates
+        triangles: List of (v0, v1, v2) triangle vertex indices
+    """
+    if bpy is None or obj is None or obj.type != "MESH":
+        return None
+
+    # Get evaluated mesh (with modifiers applied)
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    eval_obj = obj.evaluated_get(depsgraph)
+    mesh = eval_obj.to_mesh()
+
+    if mesh is None:
+        return None
+
+    # Ensure mesh has triangulated faces
+    mesh.calc_loop_triangles()
+
+    # Extract vertices in object space
+    vertices = [(v.co.x, v.co.y, v.co.z) for v in mesh.vertices]
+
+    # Extract triangles
+    triangles = [(tri.vertices[0], tri.vertices[1], tri.vertices[2]) for tri in mesh.loop_triangles]
+
+    # Clean up temporary mesh
+    eval_obj.to_mesh_clear()
+
+    return vertices, triangles
+
+
 def get_object_material(obj: Any, props: Any) -> Material | None:
     """Extract material from Blender object.
 
@@ -299,6 +351,7 @@ def blender_link_to_core_with_origin(
 
     # Collision geometry
     collision = None
+    collision_geom = None
     if props.export_collision:
         collision_geom = get_object_geometry(
             obj=obj,
@@ -318,12 +371,19 @@ def blender_link_to_core_with_origin(
     if props.mass > 0:
         if props.use_auto_inertia and collision_geom:
             # Auto-calculate inertia from geometry
-            # Note: Can't calculate inertia from Mesh, use bounding box instead
-            if isinstance(collision_geom, Mesh):
-                # Use bounding box for mesh inertia calculation
-                dimensions = obj.dimensions
-                bbox_geom = Box(size=Vector3(dimensions.x, dimensions.y, dimensions.z))
-                inertia_tensor = calculate_inertia(bbox_geom, props.mass)
+            if isinstance(collision_geom, Mesh) and obj.type == "MESH":
+                # Use accurate triangle-based mesh inertia calculation
+                mesh_data = extract_mesh_triangles(obj)
+                if mesh_data:
+                    vertices, triangles = mesh_data
+                    inertia_tensor = calculate_mesh_inertia_from_triangles(
+                        vertices, triangles, props.mass
+                    )
+                else:
+                    # Fallback to bounding box if mesh extraction fails
+                    dimensions = obj.dimensions
+                    bbox_geom = Box(size=Vector3(dimensions.x, dimensions.y, dimensions.z))
+                    inertia_tensor = calculate_inertia(bbox_geom, props.mass)
             else:
                 # Calculate from primitive geometry
                 inertia_tensor = calculate_inertia(collision_geom, props.mass)
@@ -537,4 +597,260 @@ def scene_to_robot(context: Any, meshes_dir: Path | None = None) -> Robot:
                 except ValueError as e:
                     print(f"Warning: Could not add joint {joint.name}: {e}")
 
+    # Fifth pass: Collect all sensors
+    for obj in scene.objects:
+        if obj.type == "EMPTY" and hasattr(obj, "linkforge_sensor"):
+            sensor = blender_sensor_to_core(obj)
+            if sensor:
+                try:
+                    robot.add_sensor(sensor)
+                except ValueError as e:
+                    print(f"Warning: Could not add sensor {sensor.name}: {e}")
+
+    # Sixth pass: Collect all transmissions
+    for obj in scene.objects:
+        if obj.type == "EMPTY" and hasattr(obj, "linkforge_transmission"):
+            transmission = blender_transmission_to_core(obj)
+            if transmission:
+                try:
+                    robot.add_transmission(transmission)
+                except ValueError as e:
+                    print(f"Warning: Could not add transmission {transmission.name}: {e}")
+
     return robot
+
+
+def blender_sensor_to_core(obj: Any) -> Sensor | None:
+    """Convert Blender Empty with SensorPropertyGroup to Core Sensor.
+
+    Args:
+        obj: Blender Empty object with linkforge_sensor property group
+
+    Returns:
+        Core Sensor model or None
+    """
+    if bpy is None or obj is None:
+        return None
+
+    props = obj.linkforge_sensor
+    if not props.is_robot_sensor:
+        return None
+
+    sensor_name = props.sensor_name if props.sensor_name else obj.name
+    sensor_type = SensorType(props.sensor_type.lower())
+    link_name = props.attached_link if props.attached_link != "NONE" else ""
+
+    if not link_name:
+        print(f"Warning: Sensor {sensor_name} has no attached link")
+        return None
+
+    # Build sensor origin from object transform
+    origin = matrix_to_transform(obj.matrix_world)
+
+    # Type-specific info
+    camera_info = None
+    lidar_info = None
+    imu_info = None
+    gps_info = None
+
+    # Noise model
+    noise = None
+    if props.use_noise:
+        noise = SensorNoise(
+            type=props.noise_type,
+            mean=props.noise_mean,
+            stddev=props.noise_stddev,
+        )
+
+    # Camera info
+    if sensor_type in (SensorType.CAMERA, SensorType.DEPTH_CAMERA):
+        camera_info = CameraInfo(
+            horizontal_fov=props.camera_horizontal_fov,
+            width=props.camera_width,
+            height=props.camera_height,
+            near_clip=props.camera_near_clip,
+            far_clip=props.camera_far_clip,
+        )
+
+    # LIDAR info
+    elif sensor_type in (SensorType.LIDAR, SensorType.GPU_LIDAR):
+        lidar_info = LidarInfo(
+            horizontal_samples=props.lidar_horizontal_samples,
+            horizontal_min_angle=props.lidar_horizontal_min_angle,
+            horizontal_max_angle=props.lidar_horizontal_max_angle,
+            vertical_samples=props.lidar_vertical_samples,
+            range_min=props.lidar_range_min,
+            range_max=props.lidar_range_max,
+            noise=noise,
+        )
+
+    # IMU info
+    elif sensor_type == SensorType.IMU:
+        imu_info = IMUInfo(
+            gravity_magnitude=props.imu_gravity_magnitude,
+            angular_velocity_noise=noise,
+            linear_acceleration_noise=noise,
+        )
+
+    # GPS info
+    elif sensor_type == SensorType.GPS:
+        gps_info = GPSInfo(
+            position_sensing_horizontal_noise=noise,
+            velocity_sensing_horizontal_noise=noise,
+        )
+
+    # Gazebo plugin
+    plugin = None
+    if props.use_gazebo_plugin and props.plugin_filename:
+        plugin = GazeboPlugin(
+            name=f"{sensor_name}_plugin",
+            filename=props.plugin_filename,
+            parameters={},
+        )
+
+    # Topic name
+    topic = props.topic_name if props.topic_name else f"/{sensor_name}"
+
+    return Sensor(
+        name=sensor_name,
+        type=sensor_type,
+        link_name=link_name,
+        origin=origin,
+        update_rate=props.update_rate,
+        camera_info=camera_info,
+        lidar_info=lidar_info,
+        imu_info=imu_info,
+        gps_info=gps_info,
+        plugin=plugin,
+        topic=topic,
+    )
+
+
+def blender_transmission_to_core(obj: Any) -> Transmission | None:
+    """Convert Blender Empty with TransmissionPropertyGroup to Core Transmission.
+
+    Args:
+        obj: Blender Empty object with linkforge_transmission property group
+
+    Returns:
+        Core Transmission model or None
+    """
+    if bpy is None or obj is None:
+        return None
+
+    props = obj.linkforge_transmission
+    if not props.is_robot_transmission:
+        return None
+
+    transmission_name = props.transmission_name if props.transmission_name else obj.name
+
+    # Determine transmission type
+    trans_type_str = props.transmission_type
+    if trans_type_str == "SIMPLE":
+        trans_type = TransmissionType.SIMPLE.value
+    elif trans_type_str == "DIFFERENTIAL":
+        trans_type = TransmissionType.DIFFERENTIAL.value
+    elif trans_type_str == "FOUR_BAR_LINKAGE":
+        trans_type = TransmissionType.FOUR_BAR_LINKAGE.value
+    elif trans_type_str == "CUSTOM":
+        trans_type = props.custom_type if props.custom_type else "custom"
+    else:
+        trans_type = TransmissionType.SIMPLE.value
+
+    # Determine hardware interface
+    hardware_iface_str = props.hardware_interface
+    if hardware_iface_str == "POSITION":
+        hardware_interface = HardwareInterface.COMMAND_POSITION.value
+    elif hardware_iface_str == "VELOCITY":
+        hardware_interface = HardwareInterface.COMMAND_VELOCITY.value
+    elif hardware_iface_str == "EFFORT":
+        hardware_interface = HardwareInterface.COMMAND_EFFORT.value
+    elif hardware_iface_str == "POSITION_ROS1":
+        hardware_interface = HardwareInterface.POSITION.value
+    elif hardware_iface_str == "VELOCITY_ROS1":
+        hardware_interface = HardwareInterface.VELOCITY.value
+    elif hardware_iface_str == "EFFORT_ROS1":
+        hardware_interface = HardwareInterface.EFFORT.value
+    else:
+        hardware_interface = HardwareInterface.COMMAND_POSITION.value
+
+    # Build joints and actuators based on type
+    joints: list[TransmissionJoint] = []
+    actuators: list[TransmissionActuator] = []
+
+    if trans_type_str == "SIMPLE":
+        joint_name = props.joint_name if props.joint_name != "NONE" else ""
+        if not joint_name:
+            print(f"Warning: Transmission {transmission_name} has no joint selected")
+            return None
+
+        # Actuator name
+        if props.use_custom_actuator_name and props.actuator_name:
+            actuator_name = props.actuator_name
+        else:
+            actuator_name = f"{joint_name}_motor"
+
+        joints.append(
+            TransmissionJoint(
+                name=joint_name,
+                hardware_interfaces=[hardware_interface],
+                mechanical_reduction=props.mechanical_reduction,
+                offset=props.offset,
+            )
+        )
+        actuators.append(
+            TransmissionActuator(
+                name=actuator_name,
+                hardware_interfaces=[hardware_interface],
+            )
+        )
+
+    elif trans_type_str == "DIFFERENTIAL":
+        joint1_name = props.joint1_name if props.joint1_name != "NONE" else ""
+        joint2_name = props.joint2_name if props.joint2_name != "NONE" else ""
+
+        if not joint1_name or not joint2_name:
+            print(f"Warning: Differential transmission {transmission_name} needs 2 joints")
+            return None
+
+        # Actuator names
+        if props.use_custom_actuator_name:
+            actuator1_name = (
+                props.actuator1_name if props.actuator1_name else f"{joint1_name}_motor"
+            )
+            actuator2_name = (
+                props.actuator2_name if props.actuator2_name else f"{joint2_name}_motor"
+            )
+        else:
+            actuator1_name = f"{joint1_name}_motor"
+            actuator2_name = f"{joint2_name}_motor"
+
+        joints.append(
+            TransmissionJoint(
+                name=joint1_name,
+                hardware_interfaces=[hardware_interface],
+                mechanical_reduction=props.mechanical_reduction,
+                offset=props.offset,
+            )
+        )
+        joints.append(
+            TransmissionJoint(
+                name=joint2_name,
+                hardware_interfaces=[hardware_interface],
+                mechanical_reduction=props.mechanical_reduction,
+                offset=props.offset,
+            )
+        )
+        actuators.append(
+            TransmissionActuator(name=actuator1_name, hardware_interfaces=[hardware_interface])
+        )
+        actuators.append(
+            TransmissionActuator(name=actuator2_name, hardware_interfaces=[hardware_interface])
+        )
+
+    return Transmission(
+        name=transmission_name,
+        type=trans_type,
+        joints=joints,
+        actuators=actuators,
+    )

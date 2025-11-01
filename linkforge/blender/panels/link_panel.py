@@ -88,11 +88,6 @@ class LINKFORGE_PT_link_panel(Panel):
         box.prop(props, "use_visual_geometry")
         if props.use_visual_geometry:
             box.prop(props, "visual_geometry_type", text="Visual")
-            # Note about mesh export limitation
-            if props.visual_geometry_type == "MESH":
-                info_box = box.box()
-                info_box.label(text="Note: Mesh uses bounding", icon="INFO")
-                info_box.label(text="box approximation for now")
 
         # Collision
         box.prop(props, "export_collision")
@@ -114,6 +109,27 @@ class LINKFORGE_PT_link_panel(Panel):
             if props.material_source == "CUSTOM":
                 # Custom color picker
                 box.prop(props, "material_color", text="")
+
+                # Material presets
+                preset_row = box.row()
+                preset_row.label(text="Presets:", icon="PRESET")
+
+                from ...core.presets import PresetManager
+
+                manager = PresetManager()
+                presets = manager.list_material_presets()
+
+                if presets:
+                    for preset_name in presets[:3]:  # Show first 3
+                        op = preset_row.operator(
+                            "linkforge.apply_material_preset", text=preset_name[:10], icon="COLOR"
+                        )
+                        op.preset_name = preset_name
+
+                # Save current as preset
+                box.operator(
+                    "linkforge.save_material_preset", icon="FILE_TICK", text="Save as Preset"
+                )
             else:
                 # Show current Blender material color (read-only info)
                 if obj.material_slots and obj.material_slots[0].material:

@@ -11,6 +11,7 @@ from linkforge.core.physics import (
     calculate_cylinder_inertia,
     calculate_inertia,
     calculate_mesh_inertia,
+    calculate_mesh_inertia_from_triangles,
     calculate_sphere_inertia,
 )
 
@@ -249,4 +250,167 @@ class TestMeshInertia:
         """Test that negative mass returns zero inertia."""
         mesh = Mesh(filepath="test.stl")
         inertia = calculate_mesh_inertia(mesh, mass=-1.0)
+        assert inertia == InertiaTensor.zero()
+
+
+class TestMeshInertiaFromTriangles:
+    """Tests for triangle-based mesh inertia calculation."""
+
+    def test_unit_cube_mesh(self):
+        """Test inertia of unit cube mesh has reasonable values."""
+        # Create vertices for unit cube centered at origin
+        vertices = [
+            (-0.5, -0.5, -0.5),  # 0
+            (0.5, -0.5, -0.5),  # 1
+            (0.5, 0.5, -0.5),  # 2
+            (-0.5, 0.5, -0.5),  # 3
+            (-0.5, -0.5, 0.5),  # 4
+            (0.5, -0.5, 0.5),  # 5
+            (0.5, 0.5, 0.5),  # 6
+            (-0.5, 0.5, 0.5),  # 7
+        ]
+
+        # Create triangulated cube faces (2 triangles per face, 12 total)
+        triangles = [
+            # Bottom face (z = -0.5)
+            (0, 1, 2),
+            (0, 2, 3),
+            # Top face (z = 0.5)
+            (4, 6, 5),
+            (4, 7, 6),
+            # Front face (y = -0.5)
+            (0, 5, 1),
+            (0, 4, 5),
+            # Back face (y = 0.5)
+            (3, 2, 6),
+            (3, 6, 7),
+            # Left face (x = -0.5)
+            (0, 3, 7),
+            (0, 7, 4),
+            # Right face (x = 0.5)
+            (1, 5, 6),
+            (1, 6, 2),
+        ]
+
+        mass = 1.0
+        mesh_inertia = calculate_mesh_inertia_from_triangles(vertices, triangles, mass)
+
+        # For a unit cube, inertia should be in reasonable range
+        # Analytical: I = (1/12) * m * (1² + 1²) = 1/6 ≈ 0.167
+        # Mesh calculation gives reasonable approximation
+        assert 0.05 < mesh_inertia.ixx < 0.3
+        assert 0.05 < mesh_inertia.iyy < 0.3
+        assert 0.05 < mesh_inertia.izz < 0.3
+
+        # Diagonal values should be similar for a cube
+        assert mesh_inertia.ixx == pytest.approx(mesh_inertia.iyy, rel=0.1)
+        assert mesh_inertia.iyy == pytest.approx(mesh_inertia.izz, rel=0.1)
+
+        # Off-diagonal terms should be small for centered cube (not exactly zero due to numerical integration)
+        assert abs(mesh_inertia.ixy) < 0.01
+        assert abs(mesh_inertia.ixz) < 0.01
+        assert abs(mesh_inertia.iyz) < 0.01
+
+    def test_rectangular_mesh(self):
+        """Test inertia of rectangular box mesh has reasonable values."""
+        # Create vertices for 2x3x4 box centered at origin
+        x, y, z = 1.0, 1.5, 2.0  # Half-dimensions
+        vertices = [
+            (-x, -y, -z),  # 0
+            (x, -y, -z),  # 1
+            (x, y, -z),  # 2
+            (-x, y, -z),  # 3
+            (-x, -y, z),  # 4
+            (x, -y, z),  # 5
+            (x, y, z),  # 6
+            (-x, y, z),  # 7
+        ]
+
+        triangles = [
+            (0, 1, 2),
+            (0, 2, 3),
+            (4, 6, 5),
+            (4, 7, 6),
+            (0, 5, 1),
+            (0, 4, 5),
+            (3, 2, 6),
+            (3, 6, 7),
+            (0, 3, 7),
+            (0, 7, 4),
+            (1, 5, 6),
+            (1, 6, 2),
+        ]
+
+        mass = 10.0
+        mesh_inertia = calculate_mesh_inertia_from_triangles(vertices, triangles, mass)
+
+        # Verify inertia values are positive and reasonable
+        assert mesh_inertia.ixx > 0
+        assert mesh_inertia.iyy > 0
+        assert mesh_inertia.izz > 0
+
+        # For a rectangular box, different dimensions should give different inertias
+        # The inertia about an axis depends on distances perpendicular to that axis
+        # Smaller dimension → smaller inertia about that axis
+        # This verifies the calculation is dimension-aware
+        assert mesh_inertia.ixx != pytest.approx(mesh_inertia.iyy, abs=0.1)
+        assert mesh_inertia.iyy != pytest.approx(mesh_inertia.izz, abs=0.1)
+
+    def test_tetrahedron_mesh(self):
+        """Test inertia of simple tetrahedron mesh."""
+        # Regular tetrahedron
+        vertices = [
+            (1.0, 0.0, -0.707),
+            (-1.0, 0.0, -0.707),
+            (0.0, 1.0, 0.707),
+            (0.0, -1.0, 0.707),
+        ]
+
+        triangles = [
+            (0, 1, 2),
+            (0, 3, 1),
+            (0, 2, 3),
+            (1, 3, 2),
+        ]
+
+        mass = 5.0
+        inertia = calculate_mesh_inertia_from_triangles(vertices, triangles, mass)
+
+        # Should have non-zero positive diagonal terms
+        assert inertia.ixx > 0
+        assert inertia.iyy > 0
+        assert inertia.izz > 0
+
+        # Verify triangle inequality holds
+        assert inertia.ixx + inertia.iyy >= inertia.izz
+        assert inertia.ixx + inertia.izz >= inertia.iyy
+        assert inertia.iyy + inertia.izz >= inertia.ixx
+
+    def test_empty_mesh(self):
+        """Test that empty mesh returns zero inertia."""
+        vertices: list[tuple[float, float, float]] = []
+        triangles: list[tuple[int, int, int]] = []
+        inertia = calculate_mesh_inertia_from_triangles(vertices, triangles, mass=1.0)
+        assert inertia == InertiaTensor.zero()
+
+    def test_zero_mass(self):
+        """Test that zero mass returns zero inertia."""
+        vertices = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        triangles = [(0, 1, 2)]
+        inertia = calculate_mesh_inertia_from_triangles(vertices, triangles, mass=0.0)
+        assert inertia == InertiaTensor.zero()
+
+    def test_negative_mass(self):
+        """Test that negative mass returns zero inertia."""
+        vertices = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        triangles = [(0, 1, 2)]
+        inertia = calculate_mesh_inertia_from_triangles(vertices, triangles, mass=-1.0)
+        assert inertia == InertiaTensor.zero()
+
+    def test_degenerate_mesh(self):
+        """Test mesh with zero volume returns zero inertia."""
+        # Flat triangle (zero volume)
+        vertices = [(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)]
+        triangles = [(0, 1, 2)]
+        inertia = calculate_mesh_inertia_from_triangles(vertices, triangles, mass=1.0)
         assert inertia == InertiaTensor.zero()

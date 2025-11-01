@@ -8,6 +8,7 @@ from __future__ import annotations
 
 def test_axis_vector_logic_x():
     """Test X axis logic."""
+
     # Mock props object
     class Props:
         axis = "X"
@@ -34,6 +35,7 @@ def test_axis_vector_logic_x():
 
 def test_axis_vector_logic_y():
     """Test Y axis logic."""
+
     class Props:
         axis = "Y"
         custom_axis_x = 0.0
@@ -58,6 +60,7 @@ def test_axis_vector_logic_y():
 
 def test_axis_vector_logic_z():
     """Test Z axis logic."""
+
     class Props:
         axis = "Z"
         custom_axis_x = 0.0
@@ -82,6 +85,7 @@ def test_axis_vector_logic_z():
 
 def test_axis_vector_logic_custom():
     """Test custom axis logic."""
+
     class Props:
         axis = "CUSTOM"
         custom_axis_x = 0.5
@@ -106,6 +110,7 @@ def test_axis_vector_logic_custom():
 
 def test_axis_vector_logic_default():
     """Test default axis for unknown type."""
+
     class Props:
         axis = "UNKNOWN"
         custom_axis_x = 0.0

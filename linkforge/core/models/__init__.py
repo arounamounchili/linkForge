@@ -1,5 +1,14 @@
 """Core data models for robot descriptions."""
 
+from .gazebo import (
+    GazeboElement,
+    GazeboPlugin,
+    create_camera_plugin,
+    create_differential_drive_plugin,
+    create_imu_plugin,
+    create_joint_state_publisher_plugin,
+    create_lidar_plugin,
+)
 from .geometry import (
     Box,
     Capsule,
@@ -24,6 +33,22 @@ from .joint import (
 from .link import Collision, Inertial, InertiaTensor, Link, Visual
 from .material import Color, Colors, Material
 from .robot import Robot
+from .sensor import (
+    CameraInfo,
+    GPSInfo,
+    IMUInfo,
+    LidarInfo,
+    Sensor,
+    SensorNoise,
+    SensorType,
+)
+from .transmission import (
+    HardwareInterface,
+    Transmission,
+    TransmissionActuator,
+    TransmissionJoint,
+    TransmissionType,
+)
 
 __all__ = [
     # Geometry
@@ -57,4 +82,26 @@ __all__ = [
     "Joint",
     # Robot
     "Robot",
+    # Sensor
+    "SensorType",
+    "SensorNoise",
+    "CameraInfo",
+    "LidarInfo",
+    "IMUInfo",
+    "GPSInfo",
+    "Sensor",
+    # Transmission
+    "TransmissionType",
+    "HardwareInterface",
+    "TransmissionJoint",
+    "TransmissionActuator",
+    "Transmission",
+    # Gazebo
+    "GazeboPlugin",
+    "GazeboElement",
+    "create_differential_drive_plugin",
+    "create_joint_state_publisher_plugin",
+    "create_camera_plugin",
+    "create_imu_plugin",
+    "create_lidar_plugin",
 ]

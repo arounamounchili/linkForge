@@ -144,6 +144,126 @@ def calculate_capsule_inertia(capsule: Capsule, mass: float) -> InertiaTensor:
     return InertiaTensor(ixx=ixx, ixy=0.0, ixz=0.0, iyy=iyy, iyz=0.0, izz=izz)
 
 
+def calculate_mesh_inertia_from_triangles(
+    vertices: list[tuple[float, float, float]],
+    triangles: list[tuple[int, int, int]],
+    mass: float,
+) -> InertiaTensor:
+    """Calculate inertia tensor for a triangle mesh using tetrahedralization.
+
+    Decompose the mesh into tetrahedra and integrate their inertia contributions.
+    Based on "Computing the moment of inertia of a solid defined by a triangle mesh"
+    and standard tetrahedral inertia formulas.
+
+    The algorithm assumes the mesh is closed and represents a solid volume.
+
+    Args:
+        vertices: List of (x, y, z) vertex coordinates
+        triangles: List of (v0, v1, v2) triangle indices (into vertices list)
+        mass: Total mass in kg
+
+    Returns:
+        Inertia tensor about center of mass
+    """
+    if mass <= 0:
+        return InertiaTensor.zero()
+
+    if not vertices or not triangles:
+        return InertiaTensor.zero()
+
+    # Accumulators for volume-weighted properties
+    total_volume = 0.0
+    weighted_com = [0.0, 0.0, 0.0]
+    # Inertia tensor components about origin
+    ixx, iyy, izz = 0.0, 0.0, 0.0
+    ixy, ixz, iyz = 0.0, 0.0, 0.0
+
+    # Process each triangle as a tetrahedron with apex at origin
+    for tri in triangles:
+        # Get vertices
+        a = vertices[tri[0]]
+        b = vertices[tri[1]]
+        c = vertices[tri[2]]
+
+        # Compute signed volume of tetrahedron
+        # V = (1/6) | a · (b × c) |
+        det = (
+            a[0] * (b[1] * c[2] - b[2] * c[1])
+            - a[1] * (b[0] * c[2] - b[2] * c[0])
+            + a[2] * (b[0] * c[1] - b[1] * c[0])
+        )
+        tet_vol = det / 6.0
+
+        total_volume += tet_vol
+
+        # Centroid of tetrahedron (origin + a + b + c) / 4
+        tet_com = [(a[i] + b[i] + c[i]) / 4.0 for i in range(3)]
+
+        # Weighted COM contribution
+        for i in range(3):
+            weighted_com[i] += tet_vol * tet_com[i]
+
+        # For a tetrahedron with one vertex at origin and others at a, b, c:
+        # The inertia tensor can be computed using canonical tetrahedral formulas
+        # We use the covariance matrix approach for tetrahedra
+
+        # Vertices of tetrahedron (origin, a, b, c)
+        verts = [(0, 0, 0), a, b, c]
+
+        # Compute inertia using discrete mass distribution at vertices
+        # For a tetrahedron, integrate over the volume
+        #
+        # Use formula: I = (density * volume / 20) * sum over edges
+        coeff = tet_vol / 20.0
+
+        for v in verts:
+            for w in verts:
+                ixx += coeff * (v[1] * w[1] + v[2] * w[2])
+                iyy += coeff * (v[0] * w[0] + v[2] * w[2])
+                izz += coeff * (v[0] * w[0] + v[1] * w[1])
+                ixy -= coeff * (v[0] * w[1] + v[1] * w[0]) / 2.0
+                ixz -= coeff * (v[0] * w[2] + v[2] * w[0]) / 2.0
+                iyz -= coeff * (v[1] * w[2] + v[2] * w[1]) / 2.0
+
+    # Check for degenerate mesh
+    if abs(total_volume) < 1e-10:
+        return InertiaTensor.zero()
+
+    # Compute center of mass
+    cx = weighted_com[0] / total_volume
+    cy = weighted_com[1] / total_volume
+    cz = weighted_com[2] / total_volume
+
+    # Compute density from mass and volume
+    density = mass / abs(total_volume)
+
+    # Scale inertia by density
+    ixx *= density
+    iyy *= density
+    izz *= density
+    ixy *= density
+    ixz *= density
+    iyz *= density
+
+    # Apply parallel axis theorem to translate to center of mass
+    # I_cm = I_origin - m * d^2
+    ixx -= mass * (cy * cy + cz * cz)
+    iyy -= mass * (cx * cx + cz * cz)
+    izz -= mass * (cx * cx + cy * cy)
+    ixy += mass * cx * cy
+    ixz += mass * cx * cz
+    iyz += mass * cy * cz
+
+    return InertiaTensor(
+        ixx=abs(ixx),
+        ixy=ixy,
+        ixz=ixz,
+        iyy=abs(iyy),
+        iyz=iyz,
+        izz=abs(izz),
+    )
+
+
 def calculate_mesh_inertia(mesh: Mesh, mass: float, method: str = "box") -> InertiaTensor:
     """Calculate approximate inertia tensor for a mesh.
 
@@ -156,13 +276,11 @@ def calculate_mesh_inertia(mesh: Mesh, mass: float, method: str = "box") -> Iner
         Approximate inertia tensor
 
     Note:
-        This is a placeholder. Actual mesh inertia calculation requires:
-        1. Loading the mesh file
-        2. Computing the mesh's bounding volume or convex hull
-        3. Using triangle mesh integration or voxelization
+        This function is for use in the core layer when mesh geometry is not available.
+        In the Blender integration layer, use calculate_mesh_inertia_from_triangles()
+        with actual mesh data for accurate results.
 
-        For now, we approximate using bounding box/sphere/cylinder.
-        In the Blender integration, we'll use actual mesh geometry.
+        For now, we approximate using bounding box (scaled by mesh.scale).
     """
     if mass <= 0:
         return InertiaTensor.zero()

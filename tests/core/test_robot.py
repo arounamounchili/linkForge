@@ -7,6 +7,10 @@ import math
 import pytest
 
 from linkforge.core.models import (
+    CameraInfo,
+    GazeboElement,
+    GazeboPlugin,
+    IMUInfo,
     Inertial,
     InertiaTensor,
     Joint,
@@ -14,6 +18,9 @@ from linkforge.core.models import (
     JointType,
     Link,
     Robot,
+    Sensor,
+    SensorType,
+    Transmission,
 )
 
 
@@ -260,3 +267,323 @@ class TestRobotValidation:
         errors = robot.validate_tree_structure()
         # link3 is disconnected and will be detected as a multiple root issue
         assert any("Multiple root links" in err for err in errors)
+
+
+class TestRobotWithSensors:
+    """Tests for Robot model with sensors."""
+
+    def test_add_sensor(self):
+        """Test adding a sensor to a robot."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="camera_link"))
+
+        sensor = Sensor(
+            name="camera",
+            type=SensorType.CAMERA,
+            link_name="camera_link",
+            camera_info=CameraInfo(),
+        )
+        robot.add_sensor(sensor)
+
+        assert len(robot.sensors) == 1
+        assert robot.get_sensor("camera") == sensor
+
+    def test_add_sensor_nonexistent_link(self):
+        """Test that adding sensor to nonexistent link raises error."""
+        robot = Robot(name="test_robot")
+
+        sensor = Sensor(
+            name="camera",
+            type=SensorType.CAMERA,
+            link_name="camera_link",  # Link doesn't exist
+            camera_info=CameraInfo(),
+        )
+
+        with pytest.raises(ValueError, match="link .* not found"):
+            robot.add_sensor(sensor)
+
+    def test_add_duplicate_sensor(self):
+        """Test that adding duplicate sensor raises error."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="camera_link"))
+
+        sensor = Sensor(
+            name="camera",
+            type=SensorType.CAMERA,
+            link_name="camera_link",
+            camera_info=CameraInfo(),
+        )
+        robot.add_sensor(sensor)
+
+        with pytest.raises(ValueError, match="already exists"):
+            robot.add_sensor(sensor)
+
+    def test_get_sensors_for_link(self):
+        """Test getting all sensors for a link."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="sensor_link"))
+        robot.add_link(Link(name="other_link"))
+
+        camera = Sensor(
+            name="camera",
+            type=SensorType.CAMERA,
+            link_name="sensor_link",
+            camera_info=CameraInfo(),
+        )
+        imu = Sensor(
+            name="imu",
+            type=SensorType.IMU,
+            link_name="sensor_link",
+            imu_info=IMUInfo(),
+        )
+        other_sensor = Sensor(
+            name="other_camera",
+            type=SensorType.CAMERA,
+            link_name="other_link",
+            camera_info=CameraInfo(),
+        )
+
+        robot.add_sensor(camera)
+        robot.add_sensor(imu)
+        robot.add_sensor(other_sensor)
+
+        sensors = robot.get_sensors_for_link("sensor_link")
+        assert len(sensors) == 2
+        assert camera in sensors
+        assert imu in sensors
+        assert other_sensor not in sensors
+
+    def test_robot_str_with_sensors(self):
+        """Test robot string representation includes sensors."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="link1"))
+        robot.add_sensor(
+            Sensor(
+                name="camera",
+                type=SensorType.CAMERA,
+                link_name="link1",
+                camera_info=CameraInfo(),
+            )
+        )
+
+        robot_str = str(robot)
+        assert "sensors=1" in robot_str
+
+
+class TestRobotWithTransmissions:
+    """Tests for Robot model with transmissions."""
+
+    def test_add_transmission(self):
+        """Test adding a transmission to a robot."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="link1"))
+        robot.add_link(Link(name="link2"))
+        robot.add_joint(
+            Joint(
+                name="joint1",
+                type=JointType.REVOLUTE,
+                parent="link1",
+                child="link2",
+                limits=JointLimits(lower=-math.pi, upper=math.pi),
+            )
+        )
+
+        trans = Transmission.create_simple(
+            name="trans1",
+            joint_name="joint1",
+        )
+        robot.add_transmission(trans)
+
+        assert len(robot.transmissions) == 1
+        assert robot.get_transmission("trans1") == trans
+
+    def test_add_transmission_nonexistent_joint(self):
+        """Test that adding transmission with nonexistent joint raises error."""
+        robot = Robot(name="test_robot")
+
+        trans = Transmission.create_simple(
+            name="trans1",
+            joint_name="joint1",  # Joint doesn't exist
+        )
+
+        with pytest.raises(ValueError, match="joint .* not found"):
+            robot.add_transmission(trans)
+
+    def test_add_duplicate_transmission(self):
+        """Test that adding duplicate transmission raises error."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="link1"))
+        robot.add_link(Link(name="link2"))
+        robot.add_joint(
+            Joint(
+                name="joint1",
+                type=JointType.REVOLUTE,
+                parent="link1",
+                child="link2",
+                limits=JointLimits(lower=-math.pi, upper=math.pi),
+            )
+        )
+
+        trans = Transmission.create_simple(
+            name="trans1",
+            joint_name="joint1",
+        )
+        robot.add_transmission(trans)
+
+        with pytest.raises(ValueError, match="already exists"):
+            robot.add_transmission(trans)
+
+    def test_get_transmissions_for_joint(self):
+        """Test getting all transmissions for a joint."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="link1"))
+        robot.add_link(Link(name="link2"))
+        robot.add_link(Link(name="link3"))
+
+        robot.add_joint(
+            Joint(
+                name="joint1",
+                type=JointType.REVOLUTE,
+                parent="link1",
+                child="link2",
+                limits=JointLimits(lower=-math.pi, upper=math.pi),
+            )
+        )
+        robot.add_joint(
+            Joint(
+                name="joint2",
+                type=JointType.REVOLUTE,
+                parent="link2",
+                child="link3",
+                limits=JointLimits(lower=-math.pi, upper=math.pi),
+            )
+        )
+
+        trans1 = Transmission.create_simple(name="trans1", joint_name="joint1")
+        trans2 = Transmission.create_simple(name="trans2", joint_name="joint2")
+
+        robot.add_transmission(trans1)
+        robot.add_transmission(trans2)
+
+        transmissions = robot.get_transmissions_for_joint("joint1")
+        assert len(transmissions) == 1
+        assert trans1 in transmissions
+        assert trans2 not in transmissions
+
+    def test_robot_str_with_transmissions(self):
+        """Test robot string representation includes transmissions."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="link1"))
+        robot.add_link(Link(name="link2"))
+        robot.add_joint(
+            Joint(
+                name="joint1",
+                type=JointType.REVOLUTE,
+                parent="link1",
+                child="link2",
+                limits=JointLimits(lower=-math.pi, upper=math.pi),
+            )
+        )
+
+        robot.add_transmission(Transmission.create_simple("trans1", "joint1"))
+
+        robot_str = str(robot)
+        assert "transmissions=1" in robot_str
+
+
+class TestRobotWithGazeboElements:
+    """Tests for Robot model with Gazebo elements."""
+
+    def test_add_robot_level_gazebo_element(self):
+        """Test adding a robot-level Gazebo element."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="link1"))
+
+        element = GazeboElement(
+            reference=None,
+            static=True,
+        )
+        robot.add_gazebo_element(element)
+
+        assert len(robot.gazebo_elements) == 1
+        robot_level = robot.get_robot_level_gazebo_elements()
+        assert len(robot_level) == 1
+        assert element in robot_level
+
+    def test_add_link_gazebo_element(self):
+        """Test adding a link-level Gazebo element."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="base_link"))
+
+        element = GazeboElement(
+            reference="base_link",
+            material="Gazebo/Red",
+        )
+        robot.add_gazebo_element(element)
+
+        assert len(robot.gazebo_elements) == 1
+        link_elements = robot.get_gazebo_elements_for_link("base_link")
+        assert len(link_elements) == 1
+        assert element in link_elements
+
+    def test_add_joint_gazebo_element(self):
+        """Test adding a joint-level Gazebo element."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="link1"))
+        robot.add_link(Link(name="link2"))
+        robot.add_joint(
+            Joint(
+                name="joint1",
+                type=JointType.REVOLUTE,
+                parent="link1",
+                child="link2",
+                limits=JointLimits(lower=-math.pi, upper=math.pi),
+            )
+        )
+
+        element = GazeboElement(
+            reference="joint1",
+            provide_feedback=True,
+        )
+        robot.add_gazebo_element(element)
+
+        joint_elements = robot.get_gazebo_elements_for_joint("joint1")
+        assert len(joint_elements) == 1
+        assert element in joint_elements
+
+    def test_add_gazebo_element_invalid_reference(self):
+        """Test that adding Gazebo element with invalid reference raises error."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="link1"))
+
+        element = GazeboElement(
+            reference="nonexistent_link",
+            material="Gazebo/Red",
+        )
+
+        with pytest.raises(ValueError, match="does not match any link or joint"):
+            robot.add_gazebo_element(element)
+
+    def test_add_gazebo_element_with_plugin(self):
+        """Test adding Gazebo element with plugin."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="link1"))
+
+        plugin = GazeboPlugin(name="test_plugin", filename="lib.so")
+        element = GazeboElement(
+            reference=None,
+            plugins=[plugin],
+        )
+        robot.add_gazebo_element(element)
+
+        robot_level = robot.get_robot_level_gazebo_elements()
+        assert len(robot_level[0].plugins) == 1
+
+    def test_robot_str_with_gazebo_elements(self):
+        """Test robot string representation includes Gazebo elements."""
+        robot = Robot(name="test_robot")
+        robot.add_link(Link(name="link1"))
+        robot.add_gazebo_element(GazeboElement(reference=None, static=True))
+
+        robot_str = str(robot)
+        assert "gazebo_elements=1" in robot_str

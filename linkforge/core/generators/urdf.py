@@ -6,11 +6,13 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from xml.dom import minidom
 
+from ..models.gazebo import GazeboElement, GazeboPlugin
 from ..models.geometry import Box, Capsule, Cylinder, Mesh, Sphere
 from ..models.joint import Joint, JointType
 from ..models.link import Collision, Inertial, Link, Visual
 from ..models.material import Material
 from ..models.robot import Robot
+from ..models.transmission import Transmission
 
 
 class URDFGenerator:
@@ -58,6 +60,14 @@ class URDFGenerator:
         # Add joints
         for joint in robot.joints:
             self._add_joint_element(root, joint)
+
+        # Add transmissions
+        for transmission in robot.transmissions:
+            self._add_transmission_element(root, transmission)
+
+        # Add Gazebo elements
+        for gazebo_elem in robot.gazebo_elements:
+            self._add_gazebo_element(root, gazebo_elem)
 
         # Convert to string
         return self._element_to_string(root)
@@ -276,6 +286,140 @@ class URDFGenerator:
                 k_position=str(joint.safety_controller.k_position),
                 k_velocity=str(joint.safety_controller.k_velocity),
             )
+
+    def _add_transmission_element(self, parent: ET.Element, transmission: Transmission) -> None:
+        """Add transmission element to parent.
+
+        Args:
+            parent: Parent XML element
+            transmission: Transmission model
+        """
+        trans_elem = ET.SubElement(parent, "transmission", name=transmission.name)
+
+        # Add type
+        type_elem = ET.SubElement(trans_elem, "type")
+        type_elem.text = transmission.type
+
+        # Add joints
+        for trans_joint in transmission.joints:
+            joint_elem = ET.SubElement(trans_elem, "joint", name=trans_joint.name)
+
+            # Add hardware interfaces
+            for interface in trans_joint.hardware_interfaces:
+                iface_elem = ET.SubElement(joint_elem, "hardwareInterface")
+                iface_elem.text = interface
+
+            # Add mechanical reduction if not default
+            if trans_joint.mechanical_reduction != 1.0:
+                reduction_elem = ET.SubElement(joint_elem, "mechanicalReduction")
+                reduction_elem.text = str(trans_joint.mechanical_reduction)
+
+            # Add offset if not default
+            if trans_joint.offset != 0.0:
+                offset_elem = ET.SubElement(joint_elem, "offset")
+                offset_elem.text = str(trans_joint.offset)
+
+        # Add actuators
+        for actuator in transmission.actuators:
+            actuator_elem = ET.SubElement(trans_elem, "actuator", name=actuator.name)
+
+            # Add hardware interfaces
+            for interface in actuator.hardware_interfaces:
+                iface_elem = ET.SubElement(actuator_elem, "hardwareInterface")
+                iface_elem.text = interface
+
+            # Add mechanical reduction if not default
+            if actuator.mechanical_reduction != 1.0:
+                reduction_elem = ET.SubElement(actuator_elem, "mechanicalReduction")
+                reduction_elem.text = str(actuator.mechanical_reduction)
+
+    def _add_gazebo_element(self, parent: ET.Element, gazebo_elem: GazeboElement) -> None:
+        """Add Gazebo extension element to parent.
+
+        Args:
+            parent: Parent XML element
+            gazebo_elem: GazeboElement model
+        """
+        # Create gazebo element with optional reference attribute
+        attrib = {}
+        if gazebo_elem.reference is not None:
+            attrib["reference"] = gazebo_elem.reference
+
+        gz_elem = ET.SubElement(parent, "gazebo", **attrib)
+
+        # Add material if specified
+        if gazebo_elem.material is not None:
+            material_elem = ET.SubElement(gz_elem, "material")
+            material_elem.text = gazebo_elem.material
+
+        # Add boolean properties
+        if gazebo_elem.self_collide is not None:
+            self_collide_elem = ET.SubElement(gz_elem, "selfCollide")
+            self_collide_elem.text = "true" if gazebo_elem.self_collide else "false"
+
+        if gazebo_elem.static is not None:
+            static_elem = ET.SubElement(gz_elem, "static")
+            static_elem.text = "true" if gazebo_elem.static else "false"
+
+        if gazebo_elem.gravity is not None:
+            gravity_elem = ET.SubElement(gz_elem, "gravity")
+            gravity_elem.text = "true" if gazebo_elem.gravity else "false"
+
+        if gazebo_elem.provide_feedback is not None:
+            feedback_elem = ET.SubElement(gz_elem, "provideFeedback")
+            feedback_elem.text = "true" if gazebo_elem.provide_feedback else "false"
+
+        if gazebo_elem.implicit_spring_damper is not None:
+            spring_elem = ET.SubElement(gz_elem, "implicitSpringDamper")
+            spring_elem.text = "true" if gazebo_elem.implicit_spring_damper else "false"
+
+        # Add numeric properties
+        if gazebo_elem.mu1 is not None:
+            mu1_elem = ET.SubElement(gz_elem, "mu1")
+            mu1_elem.text = str(gazebo_elem.mu1)
+
+        if gazebo_elem.mu2 is not None:
+            mu2_elem = ET.SubElement(gz_elem, "mu2")
+            mu2_elem.text = str(gazebo_elem.mu2)
+
+        if gazebo_elem.kp is not None:
+            kp_elem = ET.SubElement(gz_elem, "kp")
+            kp_elem.text = str(gazebo_elem.kp)
+
+        if gazebo_elem.kd is not None:
+            kd_elem = ET.SubElement(gz_elem, "kd")
+            kd_elem.text = str(gazebo_elem.kd)
+
+        if gazebo_elem.stop_cfm is not None:
+            cfm_elem = ET.SubElement(gz_elem, "stopCfm")
+            cfm_elem.text = str(gazebo_elem.stop_cfm)
+
+        if gazebo_elem.stop_erp is not None:
+            erp_elem = ET.SubElement(gz_elem, "stopErp")
+            erp_elem.text = str(gazebo_elem.stop_erp)
+
+        # Add custom properties
+        for key, value in gazebo_elem.properties.items():
+            prop_elem = ET.SubElement(gz_elem, key)
+            prop_elem.text = value
+
+        # Add plugins
+        for plugin in gazebo_elem.plugins:
+            self._add_gazebo_plugin_element(gz_elem, plugin)
+
+    def _add_gazebo_plugin_element(self, parent: ET.Element, plugin: GazeboPlugin) -> None:
+        """Add Gazebo plugin element to parent.
+
+        Args:
+            parent: Parent XML element
+            plugin: GazeboPlugin model
+        """
+        plugin_elem = ET.SubElement(parent, "plugin", name=plugin.name, filename=plugin.filename)
+
+        # Add all parameters as sub-elements
+        for key, value in plugin.parameters.items():
+            param_elem = ET.SubElement(plugin_elem, key)
+            param_elem.text = value
 
     def _element_to_string(self, element: ET.Element) -> str:
         """Convert XML element to string.

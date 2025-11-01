@@ -259,9 +259,22 @@ def fix_existing_joints(scene=None):
             obj.type == "EMPTY"
             and hasattr(obj, "linkforge_joint")
             and obj.linkforge_joint.is_robot_joint
-            and obj.empty_display_type != "PLAIN_AXES"
         ):
-            obj.empty_display_type = "PLAIN_AXES"
+            # Ensure PLAIN_AXES type
+            if obj.empty_display_type != "PLAIN_AXES":
+                obj.empty_display_type = "PLAIN_AXES"
+            # Set very small display size for easier selection (but invisible axes)
+            obj.empty_display_size = 0.01
+
+
+def fix_current_scene():
+    """Timer callback to fix joints in the current scene after registration.
+
+    This runs once after the addon registers to fix any existing joints
+    in the currently open scene. Returns None to prevent the timer from repeating.
+    """
+    fix_existing_joints()
+    return None  # Don't repeat
 
 
 def register():
@@ -281,6 +294,10 @@ def register():
     if fix_existing_joints not in bpy.app.handlers.load_post:
         bpy.app.handlers.load_post.append(fix_existing_joints)
 
+    # Fix joints in the current scene using a timer
+    # This ensures Blender context is fully available after registration
+    bpy.app.timers.register(fix_current_scene, first_interval=0.1)
+
 
 def unregister():
     """Unregister the draw handler."""
@@ -288,6 +305,10 @@ def unregister():
 
     if bpy is None:
         return
+
+    # Remove timer (if still registered)
+    if bpy.app.timers.is_registered(fix_current_scene):
+        bpy.app.timers.unregister(fix_current_scene)
 
     # Remove load handler
     if fix_existing_joints in bpy.app.handlers.load_post:

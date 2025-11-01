@@ -30,6 +30,9 @@ class LINKFORGE_OT_create_joint(Operator):
         joint_empty = context.active_object
         joint_empty.name = "Joint"
 
+        # Set very small display size for easier selection (but invisible axes)
+        joint_empty.empty_display_size = 0.01
+
         # Enable joint properties
         joint_empty.linkforge_joint.is_robot_joint = True
         joint_empty.linkforge_joint.joint_name = sanitize_urdf_name(joint_empty.name)
@@ -80,6 +83,9 @@ class LINKFORGE_OT_create_joint_at_selection(Operator):
         joint_empty = context.active_object
         joint_empty.name = f"{obj.linkforge.link_name}_joint"
         joint_empty.rotation_euler = rotation
+
+        # Set very small display size for easier selection (but invisible axes)
+        joint_empty.empty_display_size = 0.01
 
         # Enable joint properties
         joint_empty.linkforge_joint.is_robot_joint = True
