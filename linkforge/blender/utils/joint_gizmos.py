@@ -17,45 +17,17 @@ try:
     import bpy
     import gpu
     from gpu_extras.batch import batch_for_shader
-    from mathutils import Matrix, Vector
+    from mathutils import Vector
 except ImportError:
     # Allow importing without Blender
     bpy = None
     gpu = None
     batch_for_shader = None
-    Matrix = None
     Vector = None
 
 
 # Global drawing handle
 _draw_handle = None
-# Flag to track if we need redraw
-_needs_redraw = False
-
-
-def get_joint_axis_vector(joint_props) -> tuple[float, float, float]:
-    """Get the axis vector for a joint based on its properties.
-
-    Args:
-        joint_props: JointPropertyGroup instance
-
-    Returns:
-        Tuple of (x, y, z) representing the axis direction
-    """
-    if joint_props.axis == "X":
-        return (1.0, 0.0, 0.0)
-    elif joint_props.axis == "Y":
-        return (0.0, 1.0, 0.0)
-    elif joint_props.axis == "Z":
-        return (0.0, 0.0, 1.0)
-    elif joint_props.axis == "CUSTOM":
-        return (
-            joint_props.custom_axis_x,
-            joint_props.custom_axis_y,
-            joint_props.custom_axis_z,
-        )
-    else:
-        return (0.0, 0.0, 1.0)  # Default to Z
 
 
 def generate_arrow_cone_vertices(
