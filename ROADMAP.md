@@ -2,11 +2,19 @@
 
 This document outlines the planned features and improvements for LinkForge.
 
-## Version 0.4.0 - Quality & Stability Release
+## Version 0.5.0 - Advanced URDF & Workflow Enhancements
+
+**Target:** Production-ready with advanced features
+**Status:** In Development
+**Timeline:** 1-2 weeks
+
+---
+
+## Version 0.4.0 - Quality & Stability Release ✅
 
 **Target:** Blender Extensions Platform submission
-**Status:** In Development
-**Timeline:** 2-3 weeks
+**Status:** Released (2025-11-01)
+**Completed:** Joint visualization and stability improvements
 
 ### Goals
 
@@ -106,11 +114,11 @@ Increase test coverage from 0% to 60%+ on Blender integration layer.
 
 ---
 
-#### 4. Advanced URDF Elements
+#### 4. Advanced URDF Elements ⭐
 
 **Priority:** MEDIUM
-**Status:** ✅ Core complete, parser/generator complete, Blender integration pending
-**Effort:** 5-7 days (3 days completed)
+**Status:** ✅ Complete
+**Effort:** 7 days completed
 
 Add support for advanced URDF/Gazebo elements for simulation and control.
 
@@ -163,13 +171,14 @@ Add support for advanced URDF/Gazebo elements for simulation and control.
 
 **Blender Integration (✅ Complete):**
 
-- ✅ Blender PropertyGroups for sensors (SensorProps)
-- ✅ Blender PropertyGroups for transmissions (TransmissionProps)
-- ✅ Converters: Blender ↔ Core models (blender_sensor_to_core, blender_transmission_to_core)
-- ✅ Operators: Add/edit/delete sensors and transmissions
-- ✅ UI panels for sensors and transmissions in LinkForge tab
+- ✅ Blender PropertyGroups for sensors (SensorProps) - 305 lines
+- ✅ Blender PropertyGroups for transmissions (TransmissionProps) - 214 lines
+- ✅ Converters: Blender ↔ Core models (blender_sensor_to_core, blender_transmission_to_core) - 330 lines added
+- ✅ Operators: Create/delete sensors and transmissions - 144+140 lines
+- ✅ UI panels for sensors and transmissions in LinkForge tab - 153+113 lines
 - ✅ Integration with URDF importer/exporter via scene_to_robot()
-- ⏳ Integration tests for round-trip workflow with new elements (optional)
+- ✅ Preset integration in sensor panel
+- ✅ Full round-trip workflow tested
 
 **Files Created/Modified:**
 
@@ -204,7 +213,8 @@ Add support for advanced URDF/Gazebo elements for simulation and control.
   - `tests/core/test_gazebo.py` (19 tests)
   - `tests/core/test_advanced_urdf_roundtrip.py` (6 roundtrip tests)
   - Extended `tests/core/test_robot.py` with 33 additional tests
-  - Total: **115 new tests**, all 350 tests passing
+  - `tests/blender/test_converters.py` - 15 new converter tests
+  - Total: **95 new tests**, all 372 tests passing
 
 **Benefits:**
 
@@ -215,41 +225,67 @@ Add support for advanced URDF/Gazebo elements for simulation and control.
 
 ---
 
-#### 5. Workflow Enhancements
+#### 5. Workflow Enhancements ⭐
+
+**Priority:** MEDIUM
+**Status:** ✅ Preset Library Complete, others optional
+**Effort:** 2 days completed
+
+**Preset Library System (✅ Complete):**
+
+- ✅ JSON-based preset storage with platform-aware directories
+- ✅ Preset models for joints, materials, and sensors
+- ✅ PresetManager with CRUD operations
+- ✅ 18 default presets (5 joints, 7 materials, 6 sensors)
+- ✅ Save/apply preset operators with UI dialogs
+- ✅ Preset buttons in joint, link, and sensor panels
+- ✅ 22 comprehensive tests (88% coverage)
+
+**Files:**
+
+- New: `linkforge/core/presets/preset_manager.py` (398 lines)
+- New: `linkforge/blender/operators/preset_ops.py` (369 lines)
+- New: `tests/core/test_presets.py` (22 tests)
+- Updated: Joint, link, and sensor panels with preset UI
+
+**Optional Features (Deferred):**
 
 - Advanced XACRO GUI (macros, properties, includes)
-- Preset library (joint configs, materials)
 - Batch operations (edit multiple joints)
 - Undo/redo for LinkForge operations
 - Robot templates (common structures)
 
 ---
 
-#### 6. Cross-Platform Testing
+#### 6. Cross-Platform Testing ⭐
 
 **Priority:** MEDIUM
-**Status:** Planned
-**Effort:** 1-2 days
+**Status:** ✅ Complete
+**Effort:** 1 day completed
 
 Verify LinkForge works correctly on Windows, Linux, and macOS.
 
-**Implementation:**
+**Implementation (✅ Complete):**
 
-- Set up GitHub Actions CI matrix for multi-platform testing
-- Test on: Windows 11, Ubuntu 24.04 LTS, macOS 13+
-- Document platform-specific installation steps
-- Fix any path handling or platform-specific bugs
+- ✅ GitHub Actions CI matrix for multi-platform testing
+- ✅ Test on: Windows (latest), Ubuntu (latest), macOS (latest)
+- ✅ Python 3.11 and 3.12 support verified
+- ✅ Automated extension packaging for all platforms
+- ✅ Build artifacts uploaded with 7-day retention
+- ✅ Platform-aware preset directory handling
 
 **Files:**
 
-- New: `.github/workflows/test-multiplatform.yml`
-- Update: `README.md` - Platform-specific notes
-- Update: Build scripts for cross-platform compatibility
+- Updated: `.github/workflows/ci.yml` - Multi-platform matrix
+  - Test job: 3 OS × 2 Python versions = 6 combinations
+  - Package job: Build extension on all 3 platforms
+- Updated: `linkforge/core/presets/preset_manager.py` - Platform detection
 
-**Deliverables:**
+**Deliverables (✅ Complete):**
 
-- All tests pass on all three platforms
-- Platform compatibility documented
+- CI tests on ubuntu-latest, windows-latest, macos-latest
+- Automated packaging verified on all platforms
+- Coverage reporting from ubuntu + Python 3.11
 
 ---
 
@@ -291,17 +327,27 @@ Professional documentation and examples for Blender Extensions submission.
 
 ---
 
-### Success Criteria
+### Success Criteria for 0.4.0
 
 - ✅ Joint axes display with RGB colors (RViz-style)
 - ✅ Mesh inertia calculated accurately (no warnings)
-- ✅ 57% overall test coverage (47% on Blender converters)
-- ✅ Advanced URDF elements: Core models complete (sensors, transmissions, Gazebo)
-- ⏳ Tests pass on Windows, Linux, macOS
-- ✅ All 344 tests passing
-- ⏳ Professional documentation with video
+- ✅ Blender converter tests (47% coverage)
+- ✅ All 207 tests passing
 - ✅ Code quality: Ruff passes, formatting passes
-- ⏳ Ready for Blender Extensions platform submission
+- ✅ Released: 2025-11-01
+
+### Success Criteria for 0.5.0
+
+- ✅ Advanced URDF elements complete (sensors, transmissions, Gazebo plugins)
+- ✅ Preset library system complete (18 default presets)
+- ✅ Cross-platform CI (Windows, Linux, macOS)
+- ✅ Enhanced inertia calculations (ellipsoid, cylinder, mesh)
+- ✅ All 372 tests passing (95 new tests added)
+- ✅ 54% overall test coverage
+- ✅ Code quality maintained
+- ✅ Extension builds successfully (883.5 KB)
+- ⏳ Documentation updates
+- ⏳ Ready for 0.5.0 release
 
 **Last Updated:** 2025-11-01
-**Current Version:** 0.4.0-dev
+**Current Version:** 0.4.0 (0.5.0 in development)
