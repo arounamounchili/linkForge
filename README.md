@@ -35,7 +35,7 @@ LinkForge enables robotics engineers to convert 3D robot models into valid URDF/
 
 ## Installation
 
-> **Note**: LinkForge is a Blender Extension (not a legacy add-on). It requires **Blender 4.2 or newer** to access the new Extensions platform.
+> **Note**: LinkForge requires **Blender 4.2 or newer** for the Extensions platform.
 
 ### Method 1: From Blender Extensions Platform (Recommended)
 

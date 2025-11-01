@@ -9,10 +9,7 @@ Metadata is defined in blender_manifest.toml at the root of the extension.
 from __future__ import annotations
 
 # Blender Extension Entry Point
-# The manifest is loaded from blender_manifest.toml
-
-# Note: bl_info is deprecated in Blender 4.2+ Extensions
-# All metadata should be in blender_manifest.toml
+# Metadata is defined in blender_manifest.toml
 
 # Package version and metadata
 __version__ = "0.1.0"
