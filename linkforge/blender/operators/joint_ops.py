@@ -129,28 +129,6 @@ class LINKFORGE_OT_remove_joint(Operator):
         return {"FINISHED"}
 
 
-class LINKFORGE_OT_hide_joint_empty_display(Operator):
-    """Hide the default Empty display for the selected joint"""
-
-    bl_idname = "linkforge.hide_joint_empty_display"
-    bl_label = "Hide Default Empty Display"
-    bl_description = "Hide the default black arrows (use RGB axes instead)"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        """Check if operator can run."""
-        obj = context.active_object
-        return obj is not None and obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint
-
-    def execute(self, context):
-        """Execute the operator."""
-        obj = context.active_object
-        obj.empty_display_size = 0.0
-        self.report({"INFO"}, f"Hidden default display for '{obj.name}'")
-        return {"FINISHED"}
-
-
 class LINKFORGE_OT_auto_detect_parent_child(Operator):
     """Auto-detect parent and child links based on hierarchy"""
 
@@ -215,7 +193,6 @@ classes = [
     LINKFORGE_OT_create_joint,
     LINKFORGE_OT_create_joint_at_selection,
     LINKFORGE_OT_remove_joint,
-    LINKFORGE_OT_hide_joint_empty_display,
     LINKFORGE_OT_auto_detect_parent_child,
 ]
 

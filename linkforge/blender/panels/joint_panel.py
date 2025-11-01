@@ -62,14 +62,6 @@ class LINKFORGE_PT_joint_panel(Panel):
         box.label(text=f"Joint: {obj.name}", icon="EMPTY_ARROWS")
         box.prop(props, "joint_name")
 
-        # Empty display size (hide default arrows to only show RGB axes)
-        if obj.empty_display_size > 0.0:
-            row = box.row()
-            row.alert = True
-            row.operator(
-                "linkforge.hide_joint_empty_display", text="Hide Default Arrows", icon="HIDE_ON"
-            )
-
         # Joint type
         box.separator()
         box.prop(props, "joint_type")
