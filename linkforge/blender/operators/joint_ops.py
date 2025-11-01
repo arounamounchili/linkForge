@@ -30,6 +30,9 @@ class LINKFORGE_OT_create_joint(Operator):
         joint_empty = context.active_object
         joint_empty.name = "Joint"
 
+        # Hide default Empty display (we use custom RGB axes instead)
+        joint_empty.empty_display_size = 0.0
+
         # Enable joint properties
         joint_empty.linkforge_joint.is_robot_joint = True
         joint_empty.linkforge_joint.joint_name = sanitize_urdf_name(joint_empty.name)
@@ -81,6 +84,9 @@ class LINKFORGE_OT_create_joint_at_selection(Operator):
         joint_empty.name = f"{obj.linkforge.link_name}_joint"
         joint_empty.rotation_euler = rotation
 
+        # Hide default Empty display (we use custom RGB axes instead)
+        joint_empty.empty_display_size = 0.0
+
         # Enable joint properties
         joint_empty.linkforge_joint.is_robot_joint = True
         joint_empty.linkforge_joint.joint_name = sanitize_urdf_name(joint_empty.name)
@@ -120,6 +126,28 @@ class LINKFORGE_OT_remove_joint(Operator):
         bpy.data.objects.remove(obj, do_unlink=True)
 
         self.report({"INFO"}, f"Deleted joint '{joint_name}'")
+        return {"FINISHED"}
+
+
+class LINKFORGE_OT_hide_joint_empty_display(Operator):
+    """Hide the default Empty display for the selected joint"""
+
+    bl_idname = "linkforge.hide_joint_empty_display"
+    bl_label = "Hide Default Empty Display"
+    bl_description = "Hide the default black arrows (use RGB axes instead)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        """Check if operator can run."""
+        obj = context.active_object
+        return obj is not None and obj.type == "EMPTY" and obj.linkforge_joint.is_robot_joint
+
+    def execute(self, context):
+        """Execute the operator."""
+        obj = context.active_object
+        obj.empty_display_size = 0.0
+        self.report({"INFO"}, f"Hidden default display for '{obj.name}'")
         return {"FINISHED"}
 
 
@@ -187,6 +215,7 @@ classes = [
     LINKFORGE_OT_create_joint,
     LINKFORGE_OT_create_joint_at_selection,
     LINKFORGE_OT_remove_joint,
+    LINKFORGE_OT_hide_joint_empty_display,
     LINKFORGE_OT_auto_detect_parent_child,
 ]
 
