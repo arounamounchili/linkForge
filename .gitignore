@@ -6,7 +6,6 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -15,7 +14,6 @@ lib64/
 parts/
 sdist/
 var/
-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
@@ -55,6 +53,8 @@ dmypy.json
 *.swp
 *.swo
 *~
+
+# AI assistants
 .claude/
 CLAUDE.md
 
@@ -75,12 +75,12 @@ $RECYCLE.BIN/
 *.blend2
 
 # Build artifacts
+dist/
 *.pyc
 *.pyo
 *.pyd
 *.dll
 *.dylib
-wheels/
 
 # Logs
 *.log
@@ -91,9 +91,6 @@ temp/
 *.tmp
 *.bak
 *.orig
-
-# Planning documents (for reference only, not versioned)
-.planning/
 
 # Documentation builds
 docs/_build/
