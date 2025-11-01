@@ -320,11 +320,10 @@ def create_joint_object(joint: Joint, link_objects: dict, collection=None) -> ob
     if bpy is None:
         return None
 
-    # Create Empty object (RGB axes will be drawn via gizmos)
-    bpy.ops.object.empty_add(type="ARROWS", location=(0, 0, 0))
+    # Create Empty object (PLAIN_AXES has no default visualization, RGB axes drawn via gizmos)
+    bpy.ops.object.empty_add(type="PLAIN_AXES", location=(0, 0, 0))
     empty = bpy.context.active_object
-    empty.name = joint.name  # Clean name without "joint_" prefix
-    empty.empty_display_size = 0.0  # Hide default arrows (use RGB axes instead)
+    empty.name = joint.name
 
     # Set joint properties
     if hasattr(empty, "linkforge_joint"):

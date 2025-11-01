@@ -25,13 +25,10 @@ class LINKFORGE_OT_create_joint(Operator):
 
     def execute(self, context):
         """Execute the operator."""
-        # Create Empty at cursor location
-        bpy.ops.object.empty_add(type="ARROWS", location=context.scene.cursor.location)
+        # Create Empty at cursor location (PLAIN_AXES has no default visualization)
+        bpy.ops.object.empty_add(type="PLAIN_AXES", location=context.scene.cursor.location)
         joint_empty = context.active_object
         joint_empty.name = "Joint"
-
-        # Hide default Empty display (we use custom RGB axes instead)
-        joint_empty.empty_display_size = 0.0
 
         # Enable joint properties
         joint_empty.linkforge_joint.is_robot_joint = True
@@ -78,14 +75,11 @@ class LINKFORGE_OT_create_joint_at_selection(Operator):
         location = obj.matrix_world.translation.copy()
         rotation = obj.matrix_world.to_euler()
 
-        # Create Empty at object's location
-        bpy.ops.object.empty_add(type="ARROWS", location=location)
+        # Create Empty at object's location (PLAIN_AXES has no default visualization)
+        bpy.ops.object.empty_add(type="PLAIN_AXES", location=location)
         joint_empty = context.active_object
         joint_empty.name = f"{obj.linkforge.link_name}_joint"
         joint_empty.rotation_euler = rotation
-
-        # Hide default Empty display (we use custom RGB axes instead)
-        joint_empty.empty_display_size = 0.0
 
         # Enable joint properties
         joint_empty.linkforge_joint.is_robot_joint = True
