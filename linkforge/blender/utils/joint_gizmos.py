@@ -242,20 +242,26 @@ def draw_joint_axes():
     gpu.state.depth_test_set("NONE")
 
 
-def fix_existing_joints():
-    """Fix display type for existing joints in all scenes."""
+def fix_existing_joints(scene=None):
+    """Fix display type for existing joints."""
     if bpy is None:
         return
 
-    for scene in bpy.data.scenes:
-        for obj in scene.objects:
-            if (
-                obj.type == "EMPTY"
-                and hasattr(obj, "linkforge_joint")
-                and obj.linkforge_joint.is_robot_joint
-                and obj.empty_display_type != "PLAIN_AXES"
-            ):
-                obj.empty_display_type = "PLAIN_AXES"
+    # Use current scene if available, otherwise skip (will be called on load)
+    if scene is None:
+        try:
+            scene = bpy.context.scene
+        except (AttributeError, RuntimeError):
+            return
+
+    for obj in scene.objects:
+        if (
+            obj.type == "EMPTY"
+            and hasattr(obj, "linkforge_joint")
+            and obj.linkforge_joint.is_robot_joint
+            and obj.empty_display_type != "PLAIN_AXES"
+        ):
+            obj.empty_display_type = "PLAIN_AXES"
 
 
 def register():
@@ -265,14 +271,15 @@ def register():
     if bpy is None:
         return
 
-    # Fix existing joints automatically
-    fix_existing_joints()
-
     # Add draw handler
     if _draw_handle is None:
         _draw_handle = bpy.types.SpaceView3D.draw_handler_add(
             draw_joint_axes, (), "WINDOW", "POST_VIEW"
         )
+
+    # Fix joints when file is loaded
+    if fix_existing_joints not in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.append(fix_existing_joints)
 
 
 def unregister():
@@ -281,6 +288,10 @@ def unregister():
 
     if bpy is None:
         return
+
+    # Remove load handler
+    if fix_existing_joints in bpy.app.handlers.load_post:
+        bpy.app.handlers.load_post.remove(fix_existing_joints)
 
     # Remove draw handler
     if _draw_handle is not None:
