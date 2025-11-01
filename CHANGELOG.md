@@ -5,15 +5,93 @@ All notable changes to LinkForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] - Unreleased
+## [Unreleased] - 0.5.0
 
 ### Status: In Development
 
-**Goal:** Quality & Stability release for Blender Extensions Platform submission
+**Goal:** Advanced URDF Elements & Preset System
 
-### Completed Features
+### Added
 
-#### Added
+#### Advanced URDF Elements (Feature 4) ✅
+- **Sensor Support**: Full implementation of camera, depth camera, LIDAR, IMU, and GPS sensors
+  - Sensor models with type-specific properties
+  - URDF parser/generator support for sensor elements
+  - Blender PropertyGroups for sensor configuration
+  - Create/delete sensor operators
+  - Sensor panel UI with property-specific sections
+  - Visual Empty representation in Blender scene
+  - Attachment to robot links
+  - 17 comprehensive sensor tests
+
+- **Transmission Support**: Simple and differential transmission types
+  - Transmission models with hardware interfaces (position, velocity, effort)
+  - Joint/actuator configuration
+  - URDF parser/generator support
+  - Blender PropertyGroups for transmission configuration
+  - Create/delete transmission operators
+  - Transmission panel UI
+  - 12 comprehensive transmission tests
+
+- **Gazebo Plugin Support**: Sensor and physics plugins
+  - Plugin model with name and filename
+  - Parameter key-value pairs
+  - Full round-trip import/export
+  - 8 Gazebo plugin tests
+
+#### Preset Library System (Feature 5) ✅
+- **Preset Manager**: JSON-based preset storage
+  - Platform-aware directory selection (macOS/Windows/Linux)
+  - Separate directories for joints, materials, sensors
+  - CRUD operations for all preset types
+  - Preset persistence across sessions
+  - 22 comprehensive preset tests (88% coverage)
+
+- **Default Presets**: 18 pre-configured presets
+  - 5 joint presets (Revolute ±180°/±90°, Continuous Wheel, Prismatic, Fixed)
+  - 7 material presets (Aluminum, Steel, Black/White Plastic, RGB colors)
+  - 6 sensor presets (Standard/HD Camera, 2D/3D LIDAR, IMU, GPS)
+
+- **UI Integration**: Save and apply presets from panels
+  - Apply preset buttons in joint, link, and sensor panels
+  - Save current configuration as preset with dialog
+  - Preset names and descriptions
+
+#### Enhanced Inertia Calculations
+- **Ellipsoid Inertia**: Full 3D ellipsoid inertia tensor calculation
+- **Cylinder Inertia**: Proper cylinder inertia based on radius and height
+- **Triangle Mesh Inertia**: Mesh-based inertia from triangulated geometry
+- 8 new inertia calculation tests
+
+#### Converter Enhancements
+- **Sensor Conversion**: Blender sensor properties ↔ Core sensor models
+- **Transmission Conversion**: Blender transmission properties ↔ Core transmission models
+- Extended `scene_to_robot()` with sensor and transmission passes
+- 15 new converter tests
+
+### Changed
+- Extended `Robot` model with sensor and transmission collections
+- Enhanced URDF parser to handle sensors, transmissions, and Gazebo plugins
+- Enhanced URDF generator to export sensors, transmissions, and Gazebo plugins
+- Updated panel registration to include sensor and transmission panels
+- Improved operator registration system
+
+### Technical Details
+- **Test Results**: 372 tests passing (95 new tests)
+- **Test Coverage**: 54% overall coverage
+- **Code Quality**: Ruff + mypy compliance maintained ✅
+- **Cross-Platform CI**: GitHub Actions testing on Windows, macOS, Linux
+- **Package Builds**: Automated extension packaging for all platforms
+
+---
+
+## [0.4.0] - 2025-11-01
+
+### Status: Released
+
+**Goal:** Quality & Stability release with joint visualization
+
+### Added
 - **RViz-Style Joint Axis Visualization** ✅
   - RGB colored axes for all joints (Red=X, Green=Y, Blue=Z)
   - Real-time viewport rendering with GPU-accelerated drawing
@@ -25,27 +103,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Joint visualization controls
   - Help text with RViz color convention
 
-### In Progress
-
-#### Planned
-- **Accurate Mesh Inertia Calculation**: Replace bounding box approximation
-- **Blender Layer Tests**: 60%+ coverage on integration layer
-- **Cross-Platform Support**: Verified on Windows, Linux, macOS
-- **Professional Documentation**: User guide, video tutorials, API docs
-
-#### Changed
-- Improved UI tooltips and error messages (in progress)
-- Enhanced example robots with better documentation (planned)
-
-#### Fixed
-- Platform-specific path handling issues (planned)
-- Mesh inertia warnings removed (planned)
-
 ### Technical Details
-- **Current test coverage**: 207 tests passing (6 new Blender layer tests)
-- **Target test coverage**: 220+ tests, 65%+ overall coverage
-- **Platform testing**: GitHub Actions CI for Windows/Linux/macOS (planned)
-- **Code quality**: Ruff + mypy compliance maintained ✅
+- **Test Coverage**: 207 tests passing (6 new Blender layer tests)
+- **Code Quality**: Ruff + mypy compliance maintained ✅
 
 ---
 

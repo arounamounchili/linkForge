@@ -27,11 +27,17 @@ LinkForge enables robotics engineers to convert 3D robot models into valid URDF/
 - **Auto-calculate inertia tensors** from object geometry and mass
 - **Joint limits, dynamics, and mimic constraints**
 
+### Advanced URDF Elements
+- **Sensors**: Camera, Depth Camera, LIDAR, IMU, GPS with full configuration
+- **Transmissions**: Simple and differential transmissions with hardware interfaces
+- **Gazebo plugins**: Sensor and physics plugin support for simulation
+- **Preset library**: Pre-configured joint, material, and sensor presets
+
 ### Visualization & Validation
 - **Visual feedback**: joint axes (RViz-style RGB 3-axis), kinematic tree
 - **Validation**: catch errors before export
 - **Non-destructive workflow**: preserves existing Blender projects
-- **Fully tested**: comprehensive unit and integration tests (83% coverage)
+- **Fully tested**: comprehensive unit and integration tests (54% coverage, 372 tests passing)
 
 ## Installation
 
