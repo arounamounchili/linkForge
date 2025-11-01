@@ -26,11 +26,11 @@ class LINKFORGE_PT_joint_panel(Panel):
         layout = self.layout
         obj = context.active_object
 
-        # Visualization settings (always visible)
+        # Visualization settings
         vis_box = layout.box()
         vis_box.label(text="Visualization", icon="HIDE_OFF")
 
-        addon_prefs = context.preferences.addons.get("linkforge")
+        addon_prefs = context.preferences.addons.get("bl_ext.user_default.linkforge")
         if addon_prefs and hasattr(addon_prefs, "preferences"):
             prefs = addon_prefs.preferences
             row = vis_box.row()

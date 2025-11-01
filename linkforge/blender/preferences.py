@@ -39,7 +39,7 @@ def update_joint_axis_length(self, context):
 class LinkForgePreferences(AddonPreferences):
     """User preferences for LinkForge extension."""
 
-    bl_idname = "linkforge"
+    bl_idname = "bl_ext.user_default.linkforge"
 
     # Joint axis visualization
     show_joint_axes: BoolProperty(  # type: ignore

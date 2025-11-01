@@ -204,7 +204,7 @@ def draw_joint_axes():
     axis_length = 0.2
 
     try:
-        addon_prefs = context.preferences.addons.get("linkforge")
+        addon_prefs = context.preferences.addons.get("bl_ext.user_default.linkforge")
         if addon_prefs and hasattr(addon_prefs, "preferences"):
             prefs = addon_prefs.preferences
             if hasattr(prefs, "show_joint_axes"):
