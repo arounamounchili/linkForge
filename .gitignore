@@ -80,6 +80,7 @@ $RECYCLE.BIN/
 *.pyd
 *.dll
 *.dylib
+wheels/
 
 # Logs
 *.log
