@@ -123,6 +123,30 @@ class LINKFORGE_OT_remove_joint(Operator):
         return {"FINISHED"}
 
 
+class LINKFORGE_OT_fix_all_joint_displays(Operator):
+    """Fix display type for all joints in the scene"""
+
+    bl_idname = "linkforge.fix_all_joint_displays"
+    bl_label = "Fix All Joint Displays"
+    bl_description = "Change all joints to PLAIN_AXES type (removes black arrows)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        """Execute the operator."""
+        fixed_count = 0
+        for obj in context.scene.objects:
+            if (
+                obj.type == "EMPTY"
+                and hasattr(obj, "linkforge_joint")
+                and obj.linkforge_joint.is_robot_joint
+            ):
+                obj.empty_display_type = "PLAIN_AXES"
+                fixed_count += 1
+
+        self.report({"INFO"}, f"Fixed {fixed_count} joint(s)")
+        return {"FINISHED"}
+
+
 class LINKFORGE_OT_auto_detect_parent_child(Operator):
     """Auto-detect parent and child links based on hierarchy"""
 
@@ -187,6 +211,7 @@ classes = [
     LINKFORGE_OT_create_joint,
     LINKFORGE_OT_create_joint_at_selection,
     LINKFORGE_OT_remove_joint,
+    LINKFORGE_OT_fix_all_joint_displays,
     LINKFORGE_OT_auto_detect_parent_child,
 ]
 
