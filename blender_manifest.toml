@@ -7,7 +7,7 @@ schema_version = "1.0.0"
 id = "linkforge"
 
 # Version follows semantic versioning (MAJOR.MINOR.PATCH)
-version = "0.2.0"
+version = "0.3.0"
 
 # Display name shown in Blender
 name = "LinkForge"
@@ -46,10 +46,13 @@ tags = [
     "Modeling",
 ]
 
-# Python wheels (dependencies) - optional
-# Uncomment and configure when adding external dependencies
-# [[wheels]]
-# "./wheels/jinja2-3.1.6-py3-none-any.whl"
+# Python wheels (dependencies) - Bundled for "just works" experience
+# These dependencies are required and bundled with the extension
+wheels = [
+    "./wheels/jinja2-3.1.6-py3-none-any.whl",
+    "./wheels/xacrodoc-1.3.0-py3-none-any.whl",
+    "./wheels/rospkg-1.6.0-py3-none-any.whl",
+]
 
 # Supported platforms (omit for all platforms)
 # Options: "windows-x64", "windows-arm64", "macos-x64", "macos-arm64", "linux-x64"

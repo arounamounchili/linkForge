@@ -239,6 +239,67 @@ def parse_joint(joint_elem: ET.Element) -> Joint:
     )
 
 
+def _detect_xacro_file(root: ET.Element, filepath: Path) -> None:
+    """Detect if file is XACRO and raise helpful error.
+
+    Args:
+        root: XML root element
+        filepath: Path to file being parsed
+
+    Raises:
+        ValueError: If XACRO features are detected
+    """
+    # Check for .xacro extension
+    is_xacro_extension = filepath.suffix.lower() in [".xacro", ".urdf.xacro"]
+
+    # Check file content for xmlns:xacro (ElementTree may not preserve it)
+    has_xacro_namespace = False
+    try:
+        content = filepath.read_text(encoding="utf-8")
+        has_xacro_namespace = "xmlns:xacro" in content
+    except Exception:
+        pass
+
+    # Check for xacro elements in root
+    xacro_elements = []
+    for child in root:
+        tag = child.tag
+        # Handle both namespaced and non-namespaced tags
+        if "xacro:" in tag or (isinstance(tag, str) and tag.startswith("{") and "xacro" in tag):
+            element_name = tag.split("}")[-1] if "}" in tag else tag.split("xacro:")[-1]
+            xacro_elements.append(element_name)
+
+    # Check for xacro substitutions in attributes
+    has_substitutions = False
+    for elem in root.iter():
+        for attr_value in elem.attrib.values():
+            if isinstance(attr_value, str) and ("${" in attr_value or "$(" in attr_value):
+                has_substitutions = True
+                break
+        if has_substitutions:
+            break
+
+    # Raise error if XACRO features detected
+    if is_xacro_extension or has_xacro_namespace or xacro_elements or has_substitutions:
+        error_msg = (
+            f"XACRO file detected: {filepath.name}\n\n"
+            "LinkForge currently imports URDF files only. Please convert your XACRO file to URDF first.\n\n"
+            "Conversion options:\n"
+            "  1. If you have ROS installed:\n"
+            "     xacro {filename} > {stem}.urdf\n\n"
+            "  2. Use the standalone converter (see tools/README.md):\n"
+            "     python tools/convert_xacro.py {filename}\n\n"
+            "  3. Install xacrodoc Python package:\n"
+            "     pip install xacrodoc\n"
+            "     python -c \"from xacrodoc import XacroDoc; print(XacroDoc.from_file('{filename}').to_urdf_string())\" > {stem}.urdf\n"
+        ).format(filename=filepath.name, stem=filepath.stem)
+
+        if xacro_elements:
+            error_msg += f"\nDetected XACRO features: {', '.join(set(xacro_elements))}"
+
+        raise ValueError(error_msg)
+
+
 def parse_urdf(filepath: Path) -> Robot:
     """Parse URDF file and return Robot model.
 
@@ -251,12 +312,67 @@ def parse_urdf(filepath: Path) -> Robot:
     Raises:
         FileNotFoundError: If URDF file doesn't exist
         ET.ParseError: If XML is malformed
+        ValueError: If XACRO file is detected (not supported)
     """
     if not filepath.exists():
         raise FileNotFoundError(f"URDF file not found: {filepath}")
 
     tree = ET.parse(filepath)
     root = tree.getroot()
+
+    if root.tag != "robot":
+        raise ValueError("Root element must be <robot>")
+
+    # Detect XACRO files and provide helpful error
+    _detect_xacro_file(root, filepath)
+
+    robot_name = root.get("name", "imported_robot")
+    robot = Robot(name=robot_name)
+
+    # Parse global materials first
+    materials: dict[str, Material] = {}
+    for mat_elem in root.findall("material"):
+        mat = parse_material(mat_elem, materials)
+        if mat:
+            materials[mat.name] = mat
+
+    # Parse all links
+    for link_elem in root.findall("link"):
+        link = parse_link(link_elem, materials)
+        robot.add_link(link)
+
+    # Parse all joints
+    for joint_elem in root.findall("joint"):
+        joint = parse_joint(joint_elem)
+        robot.add_joint(joint)
+
+    return robot
+
+
+def parse_urdf_string(urdf_string: str) -> Robot:
+    """Parse URDF from XML string instead of file.
+
+    This function is used for parsing URDF content that has been generated
+    or converted from other formats (e.g., XACRO) in memory.
+
+    Args:
+        urdf_string: URDF XML content as string
+
+    Returns:
+        Robot model
+
+    Raises:
+        ET.ParseError: If XML is malformed
+        ValueError: If root element is not <robot> or URDF is invalid
+
+    Example:
+        >>> urdf_xml = '<robot name="test">...</robot>'
+        >>> robot = parse_urdf_string(urdf_xml)
+        >>> print(robot.name)
+        test
+    """
+    # Parse XML string
+    root = ET.fromstring(urdf_string)
 
     if root.tag != "robot":
         raise ValueError("Root element must be <robot>")

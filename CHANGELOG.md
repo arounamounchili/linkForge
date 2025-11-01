@@ -5,86 +5,83 @@ All notable changes to LinkForge will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2025-01-XX
+## [0.3.0] - 2025-11-01
 
 ### Added
 
-#### Advanced XACRO Features
-- **Material Property Extraction**: Automatically extracts unique materials as XACRO properties with `${variable}` references
-- **Dimension Property Extraction**: Detects common dimensions (radii, lengths) used across multiple links
-- **Macro Generation**: Automatically generates XACRO macros for repeated patterns (e.g., identical wheels)
-- **File Splitting**: Split XACRO output into organized files (materials.xacro, macros.xacro, robot.xacro)
-- Advanced XACRO mode can be toggled on/off with backward compatibility
+#### Complete XACRO Support
 
-#### Enhanced Validation System
-- Comprehensive robot validation with detailed error messages
-- Warning system for non-blocking issues (low mass, missing collision, unusual inertia)
-- Auto-fix suggestions for common problems
-- Validation panel in Blender UI showing:
-  - Validation status (✅ Valid, ⚠️ Warnings, ❌ Errors)
-  - Expandable list of issues with severity indicators
-  - Object selection from validation results
-  - Suggested fixes for each issue
+**Phase 1: Detection & Conversion**
+- **XACRO File Detection**: Automatically detects XACRO files and provides helpful error messages
+- **Standalone Converter Tool**: `tools/convert_xacro.py` for converting XACRO to URDF without ROS
+- Detects `.xacro` extensions, `xmlns:xacro` namespace, XACRO elements, and variable substitutions
+- Three conversion options: ROS xacro command, standalone converter, or manual xacrodoc
 
-#### Test Coverage Improvements
-- Added comprehensive unit tests for XACRO generator (19 tests, 99% coverage)
-- Added complete test suite for mass calculations (35 tests, 100% coverage)
-- Added full URDF parser tests (43 tests, 100% coverage)
-- Enhanced inertia calculation tests (8 new tests, 100% coverage)
-- Overall test count increased from 100 to 186 tests
-- Core module coverage improved from 24% to 38%
+**Phase 2: Native XACRO Import (NEW!) - "Just Works" Approach**
+- **Unified "Import Robot" Button**: Single button automatically detects URDF or XACRO files
+- **Smart Format Detection**: Auto-detects file format from extension (`.urdf`, `.xacro`, `.urdf.xacro`)
+- **Bundled xacrodoc Dependency**: XACRO support built-in, no installation required! 🎉
+- **Zero Configuration**: Works immediately after installing the extension
+- **parse_urdf_string()** function for parsing URDF from memory
+- **Enhanced Import Operator**: `LINKFORGE_OT_import_urdf` now handles both formats seamlessly
 
-#### Type Safety Improvements
-- Added type annotations to core generators and utilities
-- Implemented TYPE_CHECKING for Blender API imports
-- Reduced mypy errors from 77 to 70
-- Fixed multiple type mismatches in core modules
+#### Documentation
+- **README.md**: Updated "Working with XACRO Files" section with native import instructions
+- **XACRO_SUPPORT.md**: Technical rationale and implementation details
+- **tools/README.md**: Detailed converter documentation
 
-### Fixed
-
-#### Origin and Transform Calculations
-- Fixed link origin export - root link now at origin following URDF convention
-- Fixed visual and collision origin calculations to be relative to link frames
-- Fixed joint origin calculations using proper relative transforms
-- Fixed frozen dataclass error when updating joint origins
-- Correctly export object transforms to visual/collision origins
-
-#### XACRO and URDF Generation
-- Fixed generator variable type mismatch in export operator
-- Fixed mesh inertia calculation TypeError (line 173 in inertia.py)
-- Improved URDF coordinate system handling
-
-#### User Experience
-- Fixed joint enum property warnings in Blender
-- Implemented bidirectional link name synchronization
-- Added console messages for better export feedback
-- Multiple UX improvements based on user feedback
-
-### Changed
-
-- Updated mypy CI configuration comment to reflect current status (70 errors, advisory mode)
-- Improved linting compliance across all modules
-- Applied black formatting to all Python files
-- Organized imports following ruff standards
+#### Test Coverage
+- **Phase 1 Tests**: 7 tests for XACRO detection (in `test_urdf_parser.py`)
+- **Phase 2 Tests**: 8 new tests for string parsing (in `test_urdf_string_parser.py`)
+- **Total**: 201 tests passing (up from 193)
+- **Coverage**: 99% for urdf_parser.py
 
 ### Technical Details
 
-#### Code Quality
-- All 186 tests passing
+- **201 tests passing** (8 new tests for Phase 2)
 - Ruff linting: 100% compliant
 - Black formatting: 100% compliant
-- Core modules with 100% test coverage:
-  - `parsers/urdf_parser.py`
-  - `physics/mass.py`
-  - `physics/inertia.py`
-- High coverage modules (90%+):
-  - `generators/xacro.py` (99%)
-  - `models/geometry.py` (97%)
-  - `validation/validator.py` (96%)
-  - `validation/result.py` (95%)
+- Coverage: 99% for urdf_parser.py
+- **Bundled dependencies**: xacrodoc + rospkg included in extension package
+- **Package size increase**: ~200KB (negligible for better UX)
 
-#### Commits
-This release includes 19 commits with comprehensive improvements across the codebase.
+---
+
+## [0.2.0] - 2025-10-31
+
+### Added
+
+#### UI/UX Improvements
+- **Panel State Persistence Fix**: Panels now correctly show "No object selected" when nothing is selected
+- **Create Joint at Selection**: New operator to create joints at selected link's location and orientation
+- **Kinematic Tree Default OFF**: Show Structure feature now defaults to OFF for cleaner UI
+
+#### Architecture Improvements
+- **Link Architecture Refactor** (MAJOR): Link properties now stored on visual mesh objects instead of hidden empties
+  - More intuitive selection behavior
+  - No more hidden objects cluttering the scene
+  - Direct property access on visible meshes
+
+#### New Examples
+- **Humanoid Torso**: 13-link upper body robot with 12 revolute joints
+- **Quadruped Leg**: 8-link robot leg with 6 joints demonstrating leg kinematics
+
+### Fixed
+
+#### Critical Import Fixes
+- **Joint Axis Import**: Properly detects standard axes (X/Y/Z) and sets custom axis components
+- **Joint Dynamics Import**: Correctly sets `dynamics_damping` and `dynamics_friction` properties
+- **Wheel Orientation**: Fixed example files with correct RPY values and inertia tensors
+
+#### Blender Integration
+- Fixed "Remove Joint" operator to actually DELETE the joint Empty
+- Removed redundant registration messages on startup
+- Improved console feedback during export
+
+### Changed
+- Link properties moved from hidden empties to visual mesh objects
+- "Remove Joint" now deletes instead of just unmarking
+- Updated examples with correct orientations and inertia
 
 ---
 

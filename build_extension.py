@@ -92,6 +92,12 @@ def build_extension() -> Path:
         if not should_exclude:
             files_to_package.append(py_file)
 
+    # Add wheel files if they exist (bundled dependencies)
+    wheels_dir = root_dir / "wheels"
+    if wheels_dir.exists():
+        for wheel_file in wheels_dir.glob("*.whl"):
+            files_to_package.append(wheel_file)
+
     # Create the zip file
     with ZipFile(output_file, "w", ZIP_DEFLATED) as zipf:
         for file_path in files_to_package:
@@ -103,6 +109,9 @@ def build_extension() -> Path:
             if relative_path.parts[0] == "linkforge" and len(relative_path.parts) > 1:
                 # Remove the 'linkforge/' prefix
                 arcname = Path(*relative_path.parts[1:])
+            elif relative_path.parts[0] == "wheels":
+                # Keep wheels in wheels/ directory
+                arcname = relative_path
             else:
                 # Keep manifest, LICENSE, README at root
                 arcname = relative_path

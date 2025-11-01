@@ -714,3 +714,145 @@ class TestParseURDF:
 
         # Check joints are continuous type
         assert all(j.type == JointType.CONTINUOUS for j in robot.joints)
+
+
+class TestXACRODetection:
+    """Tests for XACRO file detection."""
+
+    def test_detect_xacro_namespace(self, tmp_path: Path):
+        """Test detection of XACRO namespace."""
+        xacro_content = """<?xml version="1.0"?>
+<robot name="test_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size="1 1 1"/>
+            </geometry>
+        </visual>
+    </link>
+</robot>
+"""
+        xacro_file = tmp_path / "test.xacro"
+        xacro_file.write_text(xacro_content)
+
+        with pytest.raises(ValueError, match="XACRO file detected"):
+            parse_urdf(xacro_file)
+
+    def test_detect_xacro_properties(self, tmp_path: Path):
+        """Test detection of XACRO property elements."""
+        xacro_content = """<?xml version="1.0"?>
+<robot name="test_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:property name="width" value="0.2" />
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size="${width} ${width} 0.1"/>
+            </geometry>
+        </visual>
+    </link>
+</robot>
+"""
+        xacro_file = tmp_path / "test_props.xacro"
+        xacro_file.write_text(xacro_content)
+
+        with pytest.raises(ValueError, match="XACRO file detected"):
+            parse_urdf(xacro_file)
+
+    def test_detect_xacro_substitutions(self, tmp_path: Path):
+        """Test detection of XACRO variable substitutions."""
+        xacro_content = """<?xml version="1.0"?>
+<robot name="test_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:property name="length" value="0.5" />
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <cylinder radius="0.1" length="${length}"/>
+            </geometry>
+        </visual>
+    </link>
+</robot>
+"""
+        xacro_file = tmp_path / "test_sub.xacro"
+        xacro_file.write_text(xacro_content)
+
+        with pytest.raises(ValueError, match="XACRO file detected"):
+            parse_urdf(xacro_file)
+
+    def test_detect_xacro_macros(self, tmp_path: Path):
+        """Test detection of XACRO macro definitions."""
+        xacro_content = """<?xml version="1.0"?>
+<robot name="test_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:macro name="wheel" params="prefix">
+        <link name="${prefix}_wheel">
+            <visual>
+                <geometry>
+                    <cylinder radius="0.1" length="0.05"/>
+                </geometry>
+            </visual>
+        </link>
+    </xacro:macro>
+</robot>
+"""
+        xacro_file = tmp_path / "test_macro.xacro"
+        xacro_file.write_text(xacro_content)
+
+        with pytest.raises(ValueError, match="XACRO file detected"):
+            parse_urdf(xacro_file)
+
+    def test_error_message_includes_conversion_instructions(self, tmp_path: Path):
+        """Test that error message includes helpful conversion instructions."""
+        xacro_content = """<?xml version="1.0"?>
+<robot name="test_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <link name="base_link"/>
+</robot>
+"""
+        xacro_file = tmp_path / "robot.urdf.xacro"
+        xacro_file.write_text(xacro_content)
+
+        with pytest.raises(ValueError) as exc_info:
+            parse_urdf(xacro_file)
+
+        error_msg = str(exc_info.value)
+        assert "convert" in error_msg.lower()
+        assert "xacro" in error_msg.lower()
+        assert "robot.urdf.xacro" in error_msg
+        assert "robot.urdf" in error_msg  # Shows expected output filename
+
+    def test_valid_urdf_not_detected_as_xacro(self, tmp_path: Path):
+        """Test that valid URDF files are not incorrectly detected as XACRO."""
+        urdf_content = """<?xml version="1.0"?>
+<robot name="test_robot">
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size="1 1 1"/>
+            </geometry>
+        </visual>
+    </link>
+</robot>
+"""
+        urdf_file = tmp_path / "test.urdf"
+        urdf_file.write_text(urdf_content)
+
+        # Should not raise any error
+        robot = parse_urdf(urdf_file)
+        assert robot.name == "test_robot"
+
+    def test_detect_package_substitution(self, tmp_path: Path):
+        """Test detection of ROS package substitution syntax."""
+        xacro_content = """<?xml version="1.0"?>
+<robot name="test_robot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <mesh filename="$(find my_package)/meshes/base.stl"/>
+            </geometry>
+        </visual>
+    </link>
+</robot>
+"""
+        xacro_file = tmp_path / "test_package.xacro"
+        xacro_file.write_text(xacro_content)
+
+        with pytest.raises(ValueError, match="XACRO file detected"):
+            parse_urdf(xacro_file)

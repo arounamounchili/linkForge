@@ -102,14 +102,16 @@ class LINKFORGE_PT_import_panel(Panel):
 
         # Import section
         box = layout.box()
-        box.label(text="Import URDF:", icon="IMPORT")
-        box.operator("linkforge.import_urdf", text="Import URDF/XACRO", icon="FILE_FOLDER")
+        box.label(text="Import:", icon="IMPORT")
+
+        # Single unified import button (auto-detects URDF vs XACRO)
+        box.operator("linkforge.import_urdf", text="Import Robot", icon="FILE_FOLDER")
 
         # Info text
         box.separator()
         col = box.column(align=True)
         col.label(text="Import robot models from", icon="INFO")
-        col.label(text="URDF or XACRO files")
+        col.label(text="URDF or XACRO files (auto-detect)")
 
 
 class LINKFORGE_PT_robot_panel(Panel):

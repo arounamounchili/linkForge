@@ -99,16 +99,16 @@ class LINKFORGE_OT_export_urdf(Operator, ExportHelper):
 
 
 class LINKFORGE_OT_import_urdf(Operator, ImportHelper):
-    """Import robot from URDF file"""
+    """Import robot from URDF or XACRO file"""
 
     bl_idname = "linkforge.import_urdf"
-    bl_label = "Import URDF"
-    bl_description = "Import robot from URDF/XACRO file"
+    bl_label = "Import Robot"
+    bl_description = "Import robot from URDF or XACRO file (auto-detects format)"
 
     # ImportHelper properties
     filename_ext = ".urdf"
     filter_glob: StringProperty(  # type: ignore
-        default="*.urdf;*.xacro",
+        default="*.urdf;*.xacro;*.urdf.xacro",
         options={"HIDDEN"},
     )
 
@@ -116,28 +116,49 @@ class LINKFORGE_OT_import_urdf(Operator, ImportHelper):
         """Execute the import."""
         from pathlib import Path
 
-        from ...core.parsers.urdf_parser import parse_urdf
+        from ...core.parsers.urdf_parser import parse_urdf, parse_urdf_string
         from ..utils.urdf_importer import import_robot_to_scene
 
-        # Parse URDF file
+        # Parse URDF/XACRO file
         urdf_path = Path(self.filepath)
 
+        # Detect if this is a XACRO file
+        is_xacro = urdf_path.suffix == ".xacro" or urdf_path.name.endswith(".urdf.xacro")
+
         try:
-            robot = parse_urdf(urdf_path)
+            if is_xacro:
+                # Convert XACRO to URDF using xacrodoc (bundled dependency)
+                from xacrodoc import XacroDoc
+
+                self.report({"INFO"}, f"Converting XACRO file: {urdf_path.name}")
+                doc = XacroDoc.from_file(str(urdf_path))
+                urdf_string = doc.to_urdf_string()
+
+                # Parse URDF string
+                self.report({"INFO"}, "Parsing URDF...")
+                robot = parse_urdf_string(urdf_string)
+            else:
+                # Standard URDF import
+                robot = parse_urdf(urdf_path)
+
         except FileNotFoundError:
-            self.report({"ERROR"}, f"URDF file not found: {urdf_path}")
+            self.report({"ERROR"}, f"File not found: {urdf_path}")
             return {"CANCELLED"}
         except Exception as e:
-            self.report({"ERROR"}, f"Failed to parse URDF: {e}")
+            self.report({"ERROR"}, f"Failed to parse file: {e}")
+            import traceback
+
+            traceback.print_exc()
             return {"CANCELLED"}
 
         # Import to scene
         try:
             success = import_robot_to_scene(robot, urdf_path, context)
             if success:
+                file_type = "XACRO" if is_xacro else "URDF"
                 self.report(
                     {"INFO"},
-                    f"Imported robot '{robot.name}' "
+                    f"Imported {file_type}: '{robot.name}' "
                     f"({len(robot.links)} links, {len(robot.joints)} joints)",
                 )
                 return {"FINISHED"}
@@ -147,6 +168,9 @@ class LINKFORGE_OT_import_urdf(Operator, ImportHelper):
 
         except Exception as e:
             self.report({"ERROR"}, f"Import failed: {e}")
+            import traceback
+
+            traceback.print_exc()
             return {"CANCELLED"}
 
 
