@@ -26,6 +26,20 @@ class LINKFORGE_PT_joint_panel(Panel):
         layout = self.layout
         obj = context.active_object
 
+        # Visualization settings (always visible)
+        vis_box = layout.box()
+        vis_box.label(text="Visualization", icon="HIDE_OFF")
+        try:
+            addon_prefs = context.preferences.addons.get("linkforge")
+            if addon_prefs:
+                row = vis_box.row()
+                row.prop(addon_prefs.preferences, "show_joint_axes", text="Show Axes (RGB)")
+                row = vis_box.row()
+                row.prop(addon_prefs.preferences, "joint_axis_length", text="Length")
+                row.enabled = addon_prefs.preferences.show_joint_axes
+        except (AttributeError, KeyError):
+            vis_box.label(text="Preferences not available", icon="ERROR")
+
         # Create Joint buttons (always visible)
         box = layout.box()
         box.operator("linkforge.create_joint", icon="ADD")

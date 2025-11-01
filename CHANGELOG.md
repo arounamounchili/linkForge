@@ -11,27 +11,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Goal:** Quality & Stability release for Blender Extensions Platform submission
 
-### Planned Features
+### Completed Features
 
 #### Added
-- **RViz-Style Joint Axis Visualization**: RGB colored axes (Red=X, Green=Y, Blue=Z)
+- **RViz-Style Joint Axis Visualization** ✅
+  - RGB colored axes for all joints (Red=X, Green=Y, Blue=Z)
+  - Real-time viewport rendering with GPU-accelerated drawing
+  - User preferences for show/hide and axis length control
+  - Toggle controls in Joint panel UI
+  - 3D line width and alpha blending for professional appearance
+- **Blender Preferences System**
+  - New preferences panel for extension settings
+  - Joint visualization controls
+  - Help text with RViz color convention
+
+### In Progress
+
+#### Planned
 - **Accurate Mesh Inertia Calculation**: Replace bounding box approximation
 - **Blender Layer Tests**: 60%+ coverage on integration layer
 - **Cross-Platform Support**: Verified on Windows, Linux, macOS
 - **Professional Documentation**: User guide, video tutorials, API docs
 
 #### Changed
-- Improved UI tooltips and error messages
-- Enhanced example robots with better documentation
+- Improved UI tooltips and error messages (in progress)
+- Enhanced example robots with better documentation (planned)
 
 #### Fixed
-- Platform-specific path handling issues
-- Mesh inertia warnings removed
+- Platform-specific path handling issues (planned)
+- Mesh inertia warnings removed (planned)
 
 ### Technical Details
-- **Target test coverage**: 210+ tests, 65%+ overall coverage
-- **Platform testing**: GitHub Actions CI for Windows/Linux/macOS
-- **Code quality**: Ruff + mypy compliance maintained
+- **Current test coverage**: 207 tests passing (6 new Blender layer tests)
+- **Target test coverage**: 220+ tests, 65%+ overall coverage
+- **Platform testing**: GitHub Actions CI for Windows/Linux/macOS (planned)
+- **Code quality**: Ruff + mypy compliance maintained ✅
 
 ---
 
