@@ -242,12 +242,17 @@ def parse_joint(joint_elem: ET.Element) -> Joint:
 def _detect_xacro_file(root: ET.Element, filepath: Path) -> None:
     """Detect if file is XACRO and raise helpful error.
 
+    This function is called by parse_urdf() to prevent attempting to parse
+    raw XACRO files. XACRO files should be handled by the import operator
+    which converts them to URDF first using xacrodoc.
+
     Args:
         root: XML root element
         filepath: Path to file being parsed
 
     Raises:
-        ValueError: If XACRO features are detected
+        ValueError: If XACRO features are detected in this parser
+            (XACRO files should use the "Import Robot" operator instead)
     """
     # Check for .xacro extension
     is_xacro_extension = filepath.suffix.lower() in [".xacro", ".urdf.xacro"]
@@ -283,25 +288,29 @@ def _detect_xacro_file(root: ET.Element, filepath: Path) -> None:
     if is_xacro_extension or has_xacro_namespace or xacro_elements or has_substitutions:
         error_msg = (
             f"XACRO file detected: {filepath.name}\n\n"
-            "LinkForge currently imports URDF files only. Please convert your XACRO file to URDF first.\n\n"
-            "Conversion options:\n"
-            "  1. If you have ROS installed:\n"
-            "     xacro {filename} > {stem}.urdf\n\n"
-            "  2. Use the standalone converter (see tools/README.md):\n"
-            "     python tools/convert_xacro.py {filename}\n\n"
-            "  3. Install xacrodoc Python package:\n"
-            "     pip install xacrodoc\n"
-            "     python -c \"from xacrodoc import XacroDoc; print(XacroDoc.from_file('{filename}').to_urdf_string())\" > {stem}.urdf\n"
-        ).format(filename=filepath.name, stem=filepath.stem)
+            "This parser handles URDF files only. For XACRO files, use the 'Import Robot' "
+            "operator in Blender which automatically converts XACRO to URDF.\n\n"
+            "If using this parser programmatically, convert XACRO to URDF first:\n"
+            "  1. Use parse_urdf_string() with xacrodoc:\n"
+            "     from xacrodoc import XacroDoc\n"
+            "     doc = XacroDoc.from_file('{filename}')\n"
+            "     robot = parse_urdf_string(doc.to_urdf_string())\n\n"
+            "  2. Use the standalone converter:\n"
+            "     python tools/convert_xacro.py {filename}\n"
+        ).format(filename=filepath.name)
 
         if xacro_elements:
-            error_msg += f"\nDetected XACRO features: {', '.join(set(xacro_elements))}"
+            error_msg += f"\n\nDetected XACRO features: {', '.join(set(xacro_elements))}"
 
         raise ValueError(error_msg)
 
 
 def parse_urdf(filepath: Path) -> Robot:
     """Parse URDF file and return Robot model.
+
+    Note: This function parses URDF files only. For XACRO files,
+    use parse_urdf_string() with xacrodoc, or use the Blender
+    "Import Robot" operator which handles XACRO automatically.
 
     Args:
         filepath: Path to URDF file
@@ -312,7 +321,7 @@ def parse_urdf(filepath: Path) -> Robot:
     Raises:
         FileNotFoundError: If URDF file doesn't exist
         ET.ParseError: If XML is malformed
-        ValueError: If XACRO file is detected (not supported)
+        ValueError: If XACRO file is detected (use "Import Robot" operator instead)
     """
     if not filepath.exists():
         raise FileNotFoundError(f"URDF file not found: {filepath}")
