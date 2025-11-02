@@ -213,18 +213,31 @@ class LinkPropertyGroup(PropertyGroup):
         default=False,
     )
 
-    material_source: EnumProperty(  # type: ignore
-        name="Material Source",
-        description="Where to get material/color from",
+    material_preset: EnumProperty(  # type: ignore
+        name="Material Preset",
+        description="Choose from predefined colors or custom",
         items=[
-            ("BLENDER", "From Blender Material", "Use color from object's Blender material"),
-            ("CUSTOM", "Custom Color", "Use custom color picker"),
+            ("CUSTOM", "Custom", "Use custom color picker"),
+            ("RED", "Red", "Red color"),
+            ("GREEN", "Green", "Green color"),
+            ("BLUE", "Blue", "Blue color"),
+            ("YELLOW", "Yellow", "Yellow color"),
+            ("ORANGE", "Orange", "Orange color"),
+            ("CYAN", "Cyan", "Cyan color"),
+            ("MAGENTA", "Magenta", "Magenta color"),
+            ("WHITE", "White", "White color"),
+            ("BLACK", "Black", "Black color"),
+            ("GRAY", "Gray", "Gray color"),
+            ("ALUMINUM", "Aluminum", "Metallic aluminum color"),
+            ("STEEL", "Steel", "Steel gray color"),
+            ("PLASTIC_BLACK", "Plastic Black", "Black plastic color"),
+            ("RUBBER", "Rubber", "Dark rubber color"),
         ],
-        default="BLENDER",
+        default="GRAY",
     )
 
     material_color: FloatVectorProperty(  # type: ignore
-        name="Color",
+        name="Custom Color",
         description="Custom RGBA color for this link",
         subtype="COLOR",
         size=4,

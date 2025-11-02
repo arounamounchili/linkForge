@@ -34,9 +34,7 @@ class LINKFORGE_PT_link_panel(Panel):
 
         # Mark as Link section
         box = layout.box()
-        row = box.row()
-        row.prop(props, "is_robot_link", text="")
-        row.label(text=f"Selected: {obj.name}", icon="OBJECT_DATA")
+        box.label(text=f"Selected: {obj.name}", icon="OBJECT_DATA")
 
         if not props.is_robot_link:
             row = box.row()
@@ -104,41 +102,15 @@ class LINKFORGE_PT_link_panel(Panel):
         box.prop(props, "use_material")
 
         if props.use_material:
-            box.prop(props, "material_source", text="Source")
+            # Material preset dropdown
+            box.prop(props, "material_preset", text="Preset")
 
-            if props.material_source == "CUSTOM":
-                # Custom color picker
-                box.prop(props, "material_color", text="")
+            # Show custom color picker only if Custom is selected
+            if props.material_preset == "CUSTOM":
+                box.prop(props, "material_color", text="Color")
 
-                # Material presets
-                preset_row = box.row()
-                preset_row.label(text="Presets:", icon="PRESET")
-
-                from ...core.presets import PresetManager
-
-                manager = PresetManager()
-                presets = manager.list_material_presets()
-
-                if presets:
-                    for preset_name in presets[:3]:  # Show first 3
-                        op = preset_row.operator(
-                            "linkforge.apply_material_preset", text=preset_name[:10], icon="COLOR"
-                        )
-                        op.preset_name = preset_name
-
-                # Save current as preset
-                box.operator(
-                    "linkforge.save_material_preset", icon="FILE_TICK", text="Save as Preset"
-                )
-            else:
-                # Show current Blender material color (read-only info)
-                if obj.material_slots and obj.material_slots[0].material:
-                    mat = obj.material_slots[0].material
-                    info_row = box.row()
-                    info_row.label(text=f"Using: {mat.name}", icon="CHECKMARK")
-                else:
-                    warn_row = box.row()
-                    warn_row.label(text="No Blender material", icon="ERROR")
+            # Apply material button
+            box.operator("linkforge.apply_material", icon="MATERIAL", text="Apply Material")
 
             box.prop(props, "material_name", text="Name")
 

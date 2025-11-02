@@ -19,7 +19,8 @@ class LINKFORGE_PT_transmission_panel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "LinkForge"
-    bl_order = 4
+    bl_order = 5  # After Sensors
+    bl_options = {'DEFAULT_CLOSED'}
 
     def draw(self, context):
         """Draw the panel."""

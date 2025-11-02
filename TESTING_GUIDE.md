@@ -4,6 +4,21 @@
 **Purpose:** Complete A-to-Z testing of all features in Blender
 **Estimated Time:** 2-3 hours
 
+**Testing Status:** 🟢 IN PROGRESS
+**Last Updated:** 2025-11-02
+**Tester:** Arouna Patouossa Mounchili
+
+---
+
+## ✅ Completed Tests
+
+- [x] **Pre-Testing Setup** - Extension built and installed
+- [x] **Test 1: Basic UI & Preferences** - All panels visible, order correct, UX improved
+
+## 🔄 Current Test
+
+- [ ] **Test 2: Link Creation & Properties** - STARTING NOW
+
 ---
 
 ## Pre-Testing Setup
@@ -82,7 +97,8 @@ We'll test in this order:
 
 **Expected:** All metadata displays correctly
 
-**Status:** [ ] Pass [ ] Fail [ ] Notes: _______________
+**Status:** [✅] Pass [ ] Fail
+**Notes:** All information displays correctly
 
 ### 1.2 Check Joint Visualization Preferences
 
@@ -93,25 +109,28 @@ We'll test in this order:
 
 **Expected:** Preferences section visible with joint display options
 
-**Status:** [ ] Pass [ ] Fail [ ] Notes: _______________
+**Status:** [✅] Pass [ ] Fail
+**Notes:** Preferences accessible
 
 ### 1.3 Check All Panels Visible
 
 **Steps:**
 1. In 3D Viewport, press **N**
 2. Navigate to **LinkForge** tab
-3. Verify all panels present:
-   - Robot
-   - Links
-   - Joints
-   - Sensors
-   - Transmissions
-   - Validation
-   - Export
+3. Verify all panels present in correct order:
+   - Import (collapsed)
+   - Links (EXPANDED)
+   - Joints (EXPANDED)
+   - Sensors (collapsed)
+   - Transmissions (collapsed)
+   - Validation (collapsed)
+   - Robot (collapsed)
+   - Export (collapsed)
 
-**Expected:** All 7 panels visible and expandable
+**Expected:** All 8 panels visible in workflow order, Links/Joints expanded, others collapsed
 
-**Status:** [ ] Pass [ ] Fail [ ] Notes: _______________
+**Status:** [✅] Pass [ ] Fail
+**Notes:** Panel ordering improved! Sensors and Transmissions now collapsed by default. Better UX.
 
 ---
 

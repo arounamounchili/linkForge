@@ -19,7 +19,7 @@ class LINKFORGE_PT_validation_panel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "LinkForge"
-    bl_order = 5
+    bl_order = 6  # After Transmissions, before Robot info
     bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):

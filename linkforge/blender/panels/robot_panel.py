@@ -122,7 +122,7 @@ class LINKFORGE_PT_robot_panel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "LinkForge"
-    bl_order = 3
+    bl_order = 7  # After Validation, view robot info
     bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
@@ -191,7 +191,7 @@ class LINKFORGE_PT_export_panel(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "LinkForge"
-    bl_order = 4
+    bl_order = 8  # Final step - export
     bl_options = {"DEFAULT_CLOSED"}
 
     def draw(self, context):
